@@ -307,8 +307,7 @@
     const FIREBASE_CONFIG = {
       apiKey: "AIzaSyCBa0XIboAWJIeiH6Wqer74sSiMyRKfK2s",
       authDomain: "game1-9d372.firebaseapp.com",
-      databaseURL: "https://game1-9d372-default-rtdb.firebaseio.com/
-",
+      databaseURL: "https://game1-9d372-default-rtdb.firebaseio.com",
       projectId: "game1-9d372",
       storageBucket: "game1-9d372.firebasestorage.app",
       messagingSenderId: "387028062033",
@@ -403,7 +402,12 @@
     let currentQuestionKey = null;
 
     function isFirebaseConfigured() {
-      return FIREBASE_CONFIG.apiKey && !FIREBASE_CONFIG.apiKey.includes('PASTE_YOUR');
+      return !!(
+        FIREBASE_CONFIG.apiKey &&
+        !FIREBASE_CONFIG.apiKey.includes('PASTE_YOUR') &&
+        FIREBASE_CONFIG.databaseURL &&
+        !FIREBASE_CONFIG.databaseURL.includes('PASTE_YOUR')
+      );
     }
 
     function initFirebase() {
@@ -418,6 +422,7 @@
         return true;
       } catch (e) {
         console.error(e);
+        alert('יש שגיאה בהגדרות Firebase. בדוק במיוחד את databaseURL.');
         els.setupOverlay.classList.remove('hidden');
         return false;
       }
