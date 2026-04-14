@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>מרוץ טריוויה זוגי - גרסת מירוץ</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <style>
+    :root{
+      --bg:#09111f;
+      --bg-2:#121d32;
+      --card:#101a2c;
+      --card-2:#16233b;
+      --text:#f5f8ff;
+      --muted:#9fb0d1;
+      --line:rgba(255,255,255,.08);
+      --primary:#5c8dff;
+      --primary-2:#7aa5ff;
+      --good:#27c37b;
+      --bad:#ff6b6b;
+      --gold:#ffd76a;
+      --soft:#1a2945;
+      --shadow:0 18px 45px rgba(0,0,0,.28);
+      --radius:24px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Arial,Helvetica,sans-serif;
+      background:
+        radial-gradient(circle at top right, rgba(92,141,255,.22), transparent 24%),
+        radial-gradient(circle at top left, rgba(39,195,123,.14), transparent 18%),
+        linear-gradient(180deg,#09111f 0%,#0d1830 48%,#111d32 100%);
+      color:var(--text);
+      min-height:100vh;
+    }
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      background:
+        linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+      background-size:26px 26px;
+      mask-image:linear-gradient(180deg, rgba(0,0,0,.45), transparent 85%);
+    }
+    .wrap{max-width:860px;margin:0 auto;padding:20px 14px 46px;position:relative}
+    .app-title{
+      text-align:center;
+      font-size:clamp(30px,5vw,44px);
+      font-weight:900;
+      margin:8px 0 8px;
+      letter-spacing:-.03em;
+      text-shadow:0 10px 30px rgba(92,141,255,.28);
+    }
+    .subtitle{
+      text-align:center;
+      color:var(--muted);
+      margin:0 auto 20px;
+      font-size:15px;
+      max-width:640px;
+      line-height:1.7;
+    }
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015)), var(--card);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:18px;
+      margin-bottom:14px;
+      backdrop-filter: blur(8px);
+    }
+    .hidden{display:none !important}
+    h1,h2,h3,p{margin:0}
+    .section-title{font-size:22px;font-weight:900;margin-bottom:8px}
+    .section-sub{color:var(--muted);font-size:14px;line-height:1.7;margin-bottom:16px}
+    input,button{font:inherit}
+    input{
+      width:100%;
+      padding:16px 16px;
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.1);
+      background:rgba(255,255,255,.04);
+      color:var(--text);
+      outline:none;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+    }
+    input::placeholder{color:#8ea1c8}
+    input:focus{
+      border-color:rgba(122,165,255,.75);
+      box-shadow:0 0 0 4px rgba(92,141,255,.18);
+    }
+    .btn{
+      border:none;
+      border-radius:18px;
+      padding:15px 16px;
+      font-weight:900;
+      cursor:pointer;
+      transition:.18s transform,.18s opacity,.18s background,.18s box-shadow;
+      box-shadow:0 12px 26px rgba(0,0,0,.18);
+    }
+    .btn:hover{transform:translateY(-1px)}
+    .btn:active{transform:scale(.985)}
+    .btn-primary{
+      background:linear-gradient(135deg,var(--primary),var(--primary-2));
+      color:#fff;
+    }
+    .btn-primary:hover{box-shadow:0 16px 30px rgba(92,141,255,.28)}
+    .btn-secondary{
+      background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.04));
+      color:var(--text);
+      border:1px solid rgba(255,255,255,.07);
+    }
+    .btn-ghost{
+      background:rgba(255,255,255,.03);
+      border:1px solid rgba(255,255,255,.1);
+      color:var(--text);
+    }
+    .btn-good{background:linear-gradient(135deg,#22b96f,#2fd98b);color:#fff}
+    .inline{display:flex;gap:10px;flex-wrap:wrap}
+    .inline > *{flex:1 1 180px}
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      background:rgba(92,141,255,.12);
+      color:#dfe8ff;
+      padding:10px 14px;
+      border-radius:999px;
+      font-weight:900;
+      font-size:13px;
+      border:1px solid rgba(122,165,255,.18);
+    }
+    .hero-card{
+      position:relative;
+      overflow:hidden;
+      padding:22px 18px 18px;
+    }
+    .hero-card::before{
+      content:"";
+      position:absolute;
+      width:190px;height:190px;
+      border-radius:50%;
+      background:radial-gradient(circle, rgba(92,141,255,.35) 0%, transparent 70%);
+      top:-80px;right:-50px;
+    }
+    .hero-card::after{
+      content:"";
+      position:absolute;
+      width:170px;height:170px;
+      border-radius:50%;
+      background:radial-gradient(circle, rgba(39,195,123,.22) 0%, transparent 70%);
+      bottom:-70px;left:-50px;
+    }
+    .hero-content{position:relative;z-index:1}
+    .hero-badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:10px 14px;
+      border-radius:999px;
+      background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.08);
+      color:#dbe6ff;
+      font-size:13px;
+      font-weight:900;
+      margin-bottom:14px;
+    }
+    .hero-title{
+      font-size:clamp(34px,6vw,48px);
+      line-height:1.02;
+      margin-bottom:10px;
+      font-weight:900;
+      letter-spacing:-.04em;
+    }
+    .hero-sub{
+      max-width:560px;
+      color:var(--muted);
+      line-height:1.75;
+      font-size:15px;
+      margin-bottom:18px;
+    }
+    .hero-stats{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:10px;
+      margin-top:14px;
+    }
+    .hero-stats-bar{
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:20px;
+      padding:8px;
+      gap:8px;
+    }
+    .stat-box{
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:18px;
+      padding:12px;
+      text-align:center;
+    }
+    .stat-num{font-size:22px;font-weight:900}
+    .stat-label{font-size:12px;color:var(--muted);margin-top:4px}
+    .code-box,.link-box,.info-box{
+      margin-top:12px;
+      background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border:1px dashed rgba(122,165,255,.28);
+      padding:14px;
+      border-radius:18px;
+      word-break:break-all;
+      color:#dbe5ff;
+    }
+    .big-code{font-size:28px;font-weight:900;letter-spacing:.18em;text-align:center}
+    .players{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px}
+    .players-compact{
+      background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:20px;
+      padding:10px;
+      align-items:stretch;
+    }
+    .player-chip{
+      padding:8px 10px;
+      border-radius:16px;
+      background:rgba(255,255,255,.025);
+      border:1px solid rgba(255,255,255,.05);
+    }
+    .player-chip-label{
+      color:var(--muted);
+      font-size:12px;
+      margin-bottom:6px;
+    }
+    .player-chip-name{
+      font-weight:900;
+      font-size:15px;
+      margin-bottom:6px;
+    }
+    .player-card,.mini-card{
+      background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.025));
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:20px;
+      padding:14px;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+    }
+    .player-name,.mini-name{font-weight:900;font-size:16px;margin-bottom:8px}
+    .player-meta,.mini-score{color:var(--muted);font-size:13px;line-height:1.7}
+    .player-status{margin-top:10px;font-size:13px;font-weight:900}
+    .status-on{color:#7ff0b4}
+    .status-off{color:#9fb0d1}
+    .score-row{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center}
+    .center-box{text-align:center}
+    .timer-ring{
+      width:100px;height:100px;border-radius:50%;
+      margin:0 auto 8px;
+      background:conic-gradient(var(--primary) 100%, rgba(255,255,255,.08) 0);
+      display:grid;place-items:center;
+      box-shadow:0 18px 35px rgba(92,141,255,.22);
+      transition:box-shadow .2s ease;
+    }
+    .timer-ring.warning{box-shadow:0 18px 35px rgba(255,107,107,.22)}
+    .timer-inner{
+      width:78px;height:78px;border-radius:50%;
+      background:linear-gradient(180deg,#0f1b31,#162541);
+      border:1px solid rgba(255,255,255,.08);
+      display:grid;place-items:center;
+      font-size:28px;font-weight:900;
+    }
+    .track-wrap{display:grid;grid-template-columns:1fr;gap:12px;margin-top:16px}
+    .track-title{font-weight:900;margin-bottom:8px}
+    .track{
+      background:linear-gradient(90deg, rgba(255,255,255,.04), rgba(255,255,255,.03));
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:999px;
+      padding:12px;
+      position:relative;
+      overflow:hidden;
+      min-height:44px;
+    }
+    .track-line{
+      height:20px;
+      border-radius:999px;
+      background:
+        repeating-linear-gradient(90deg, rgba(255,255,255,.045) 0 18px, rgba(255,255,255,.02) 18px 36px),
+        linear-gradient(90deg,#1a2a4a 0%,#182941 100%);
+    }
+    .runner{
+      width:34px;height:34px;border-radius:50%;
+      position:absolute;top:50%;transform:translate(-50%,-50%);
+      display:grid;place-items:center;font-size:18px;font-weight:900;
+      background:linear-gradient(180deg,#fff,#dfeaff);
+      border:2px solid var(--primary);
+      box-shadow:0 10px 22px rgba(92,141,255,.25);
+      transition:left .35s ease, transform .18s ease, box-shadow .18s ease;
+    }
+    .runner.opponent{
+      border-color:var(--good);
+      box-shadow:0 10px 22px rgba(39,195,123,.25);
+      background:linear-gradient(180deg,#fff,#e6fff3);
+    }
+    .runner.bump{transform:translate(-50%,-50%) scale(1.08)}
+    .finish{
+      position:absolute;
+      left:calc(100% - 22px);
+      top:50%;
+      transform:translateY(-50%);
+      font-size:22px;
+      filter:drop-shadow(0 4px 10px rgba(255,215,106,.18));
+    }
+    .question-box{
+      margin-top:18px;
+      background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:22px;
+      padding:16px;
+    }
+    .question-index{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      color:#dce7ff;
+      font-weight:900;
+      font-size:13px;
+      margin-bottom:10px;
+      background:rgba(92,141,255,.12);
+      padding:8px 12px;
+      border-radius:999px;
+      border:1px solid rgba(92,141,255,.2);
+    }
+    .question-text{
+      font-size:27px;
+      font-weight:900;
+      line-height:1.35;
+      margin-bottom:14px;
+      letter-spacing:-.02em;
+    }
+    .answers{display:grid;gap:10px}
+    .answer{
+      text-align:right;
+      padding:16px 16px;
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.08);
+      background:linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.025));
+      color:var(--text);
+      cursor:pointer;
+      font-weight:800;
+      transition:.18s transform,.18s background,.18s border-color,.18s box-shadow;
+      box-shadow:0 10px 24px rgba(0,0,0,.12);
+    }
+    .answer:hover{
+      transform:translateY(-2px);
+      border-color:rgba(122,165,255,.45);
+      box-shadow:0 14px 28px rgba(92,141,255,.12);
+    }
+    .answer.correct{
+      background:linear-gradient(180deg, rgba(39,195,123,.2), rgba(39,195,123,.08));
+      border-color:rgba(39,195,123,.55);
+      color:#d7ffea;
+      animation:pop .28s ease;
+    }
+    .answer.wrong{
+      background:linear-gradient(180deg, rgba(255,107,107,.16), rgba(255,107,107,.06));
+      border-color:rgba(255,107,107,.45);
+      color:#ffd6d6;
+      animation:shake .22s ease;
+    }
+    .answer.locked{pointer-events:none;opacity:.82}
+    .notice{
+      margin-top:12px;
+      padding:13px 14px;
+      border-radius:16px;
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.08);
+      font-size:14px;
+      color:var(--muted);
+      line-height:1.7;
+    }
+    .notice.good{
+      background:rgba(39,195,123,.12);
+      border-color:rgba(39,195,123,.22);
+      color:#d7ffea;
+    }
+    .notice.bad{
+      background:rgba(255,107,107,.1);
+      border-color:rgba(255,107,107,.18);
+      color:#ffd9d9;
+    }
+    .result-title{text-align:center;font-size:30px;font-weight:900;margin-bottom:10px}
+.result-card{
+      max-width:640px;
+      margin-inline:auto;
+      text-align:center;
+      padding:28px 18px 20px;
+    }
+    .result-icon{
+      width:72px;
+      height:72px;
+      margin:0 auto 14px;
+      border-radius:50%;
+      display:grid;
+      place-items:center;
+      font-size:34px;
+      background:rgba(92,141,255,.10);
+      border:1px solid rgba(255,255,255,.08);
+      box-shadow:0 10px 24px rgba(0,0,0,.14);
+    }
+    .result-score-row{
+      margin-top:18px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:14px;
+      padding:14px 16px;
+      border-radius:18px;
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.08);
+      flex-wrap:wrap;
+    }
+    .result-score-item{
+      min-width:120px;
+    }
+    .result-score-name{
+      font-size:14px;
+      font-weight:900;
+      margin-bottom:4px;
+    }
+    .result-score-value{
+      color:var(--muted);
+      font-size:14px;
+    }
+    .result-score-sep{
+      color:var(--muted);
+      font-size:20px;
+      line-height:1;
+    }
+    .result-notice{
+      margin-top:12px;
+      text-align:center;
+    }
+    .result-sub{text-align:center;color:var(--muted);line-height:1.8;margin-bottom:18px}
+    .wins-box{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
+    .setup-overlay{
+      position:fixed;inset:0;background:rgba(8,13,24,.72);
+      display:flex;align-items:center;justify-content:center;padding:16px;z-index:50;
+      backdrop-filter: blur(6px);
+    }
+    .setup-box{
+      max-width:720px;background:linear-gradient(180deg,#0f1a30,#14223b);
+      color:var(--text);
+      border-radius:24px;padding:22px;border:1px solid rgba(255,255,255,.08);box-shadow:var(--shadow)
+    }
+    .setup-box h3{font-size:24px;font-weight:900;margin-bottom:10px}
+    .setup-box p{color:var(--muted);line-height:1.8;margin-bottom:10px}
+    .setup-box code{background:#1b2b49;padding:2px 6px;border-radius:8px}
+    .steps{margin:12px 0 0;padding-right:18px;color:var(--text);line-height:1.9}
+    .tiny{font-size:12px;color:var(--muted)}
+    @keyframes pop{
+      0%{transform:scale(1)}
+      50%{transform:scale(1.02)}
+      100%{transform:scale(1)}
+    }
+    @keyframes shake{
+      0%,100%{transform:translateX(0)}
+      25%{transform:translateX(-2px)}
+      75%{transform:translateX(2px)}
+    }
+    
+    .picker-wrap{
+      margin-top:14px;
+    }
+    .picker-label{
+      font-size:13px;
+      color:var(--muted);
+      margin-bottom:8px;
+      font-weight:800;
+    }
+    .character-picker{
+      display:grid;
+      grid-template-columns:repeat(6,1fr);
+      gap:8px;
+    }
+    .char-option{
+      border:none;
+      border-radius:16px;
+      min-height:56px;
+      font-size:26px;
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.08);
+      cursor:pointer;
+      transition:.18s transform,.18s border-color,.18s background,.18s box-shadow;
+      box-shadow:0 8px 18px rgba(0,0,0,.12);
+    }
+    .char-option:hover{transform:translateY(-1px)}
+    .char-option.active{
+      border-color:rgba(122,165,255,.65);
+      background:rgba(92,141,255,.14);
+      box-shadow:0 10px 22px rgba(92,141,255,.16);
+    }
+
+    @media (max-width:560px){
+      .question-text{font-size:22px}
+      .score-row{grid-template-columns:1fr}
+      .wins-box{grid-template-columns:1fr}
+      .result-score-row{gap:10px}
+      .result-score-sep{display:none}
+      .timer-ring{width:86px;height:86px}
+      .timer-inner{width:68px;height:68px;font-size:23px}
+      .wrap{padding:12px 10px 32px}
+      .hero-title{font-size:34px}
+      .character-picker{grid-template-columns:repeat(3,1fr)}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="card hero-card" id="heroSection">
+      <div class="hero-content">
+        <div class="hero-badge">🎮 משחק מובייל • ⚡ מירוץ חי • 🏁 2 שחקנים</div>
+        <div class="hero-title">מרוץ טריוויה</div>
+        <p class="hero-sub">ענה מהר, התקדם במסלול שלך, ועקוף את היריב. יש חוק ניצחון אחד בלבד: הראשון שמגיע ל־10 תשובות נכונות מנצח מיד.</p>
+        <div class="hero-stats hero-stats-bar">
+          <div class="stat-box">
+            <div class="stat-num">10</div>
+            <div class="stat-label">צעדים לניצחון</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-num">5</div>
+            <div class="stat-label">שניות לשאלה</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-num">2</div>
+            <div class="stat-label">שחקנים בחדר</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="screen-home" class="card">
+      <h2 class="section-title">כניסה לזירה</h2>
+      <p class="section-sub">בחר שם שחקן, צור חדר חדש או היכנס עם קוד. מכאן מתחיל המירוץ.</p>
+      <input id="playerName" type="text" maxlength="20" placeholder="השם שלך" />
+      <div class="picker-wrap">
+        <div class="picker-label">בחר דמות למרוץ</div>
+        <div class="character-picker" id="homeCharacterPicker">
+          <button type="button" class="char-option active" data-char="🚀">🚀</button>
+          <button type="button" class="char-option" data-char="⚡">⚡</button>
+          <button type="button" class="char-option" data-char="🏎️">🏎️</button>
+          <button type="button" class="char-option" data-char="🛵">🛵</button>
+          <button type="button" class="char-option" data-char="🐉">🐉</button>
+          <button type="button" class="char-option" data-char="🦊">🦊</button>
+        </div>
+      </div>
+
+      <div class="inline" style="margin-top:12px">
+        <button class="btn btn-primary" id="createRoomBtn">צור משחק חדש 🏁</button>
+        <button class="btn btn-secondary" id="showJoinBtn">יש לי קוד חדר 🔑</button>
+      </div>
+      <div id="joinPanel" class="hidden" style="margin-top:12px">
+        <input id="roomCodeInput" type="text" maxlength="6" placeholder="הכנס קוד חדר" />
+        <button class="btn btn-ghost" id="joinRoomBtn" style="margin-top:10px;width:100%">הצטרף לחדר 🚪</button>
+      </div>
+    </section>
+
+    <section id="screen-invite" class="card hidden">
+      <div class="pill">נוצר חדר חדש</div>
+      <h2 class="section-title" style="margin-top:12px">שלח הזמנה לחבר</h2>
+      <p class="section-sub">המארח יוצר חדר, השחקן השני מצטרף, ומאותו רגע כל אחד מתקדם עצמאית במסלול שלו.</p>
+      <div class="code-box">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:6px">קוד חדר</div>
+        <div id="roomCodeLabel" class="big-code">------</div>
+      </div>
+      <div class="link-box">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:6px">קישור הזמנה</div>
+        <a id="inviteLink" href="#" target="_blank" rel="noopener">—</a>
+      </div>
+      <div class="inline" style="margin-top:12px">
+        <button class="btn btn-primary" id="whatsappBtn">שלח בוואטסאפ 📲</button>
+        <button class="btn btn-secondary" id="copyInviteBtn">העתק הזמנה 📋</button>
+      </div>
+      <div class="players players-compact">
+        <div class="player-chip">
+          <div class="player-chip-label">יוצר החדר</div>
+          <div class="player-chip-name" id="hostNameWait">שחקן 1</div>
+          <div class="player-status status-on">מחובר</div>
+        </div>
+        <div class="player-chip">
+          <div class="player-chip-label">שחקן 2</div>
+          <div class="player-chip-name" id="guestNameWait">ממתין לשחקן נוסף…</div>
+          <div class="player-status status-off" id="guestWaitStatus">עדיין לא נכנס</div>
+        </div>
+      </div>
+      <div class="info-box tiny">אין מעבר משותף בין שאלות. כל שחקן עובר לשאלה הבאה מיד אחרי שהוא עונה.</div>
+    </section>
+
+    <section id="screen-join-link" class="card hidden">
+      <div class="pill">הוזמנת לחדר</div>
+      <h2 class="section-title" style="margin-top:12px">הצטרפות לחדר</h2>
+      <p class="section-sub">הגעת מקישור הזמנה. כתוב שם ולחץ על הכפתור כדי להיכנס.</p>
+      <div class="code-box">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:6px">קוד חדר</div>
+        <div id="autoJoinRoomCode" class="big-code">------</div>
+      </div>
+      <input id="playerNameJoinLink" type="text" maxlength="20" placeholder="השם שלך" style="margin-top:12px" />
+      <div class="picker-wrap">
+        <div class="picker-label">בחר דמות למרוץ</div>
+        <div class="character-picker" id="joinCharacterPicker">
+          <button type="button" class="char-option active" data-char="🚀">🚀</button>
+          <button type="button" class="char-option" data-char="⚡">⚡</button>
+          <button type="button" class="char-option" data-char="🏎️">🏎️</button>
+          <button type="button" class="char-option" data-char="🛵">🛵</button>
+          <button type="button" class="char-option" data-char="🐉">🐉</button>
+          <button type="button" class="char-option" data-char="🦊">🦊</button>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="joinFromLinkBtn" style="margin-top:12px;width:100%">הצטרף עכשיו לחדר</button>
+    </section>
+
+    <section id="screen-game" class="card hidden">
+      <div class="score-row">
+        <div class="mini-card">
+          <div class="mini-name" id="meNameTop">אני</div>
+          <div class="mini-score">
+            ניצחונות: <span id="meWinsTop">0</span><br>
+            התקדמות: <span id="meProgressTop">0</span>/10<br>
+            שאלה: <span id="meQuestionTop">1</span>
+          </div>
+        </div>
+        <div class="center-box">
+          <div class="timer-ring" id="timerRing"><div class="timer-inner" id="timerText">12</div></div>
+          <div class="pill" id="roundBadge">סבב 1</div>
+        </div>
+        <div class="mini-card">
+          <div class="mini-name" id="opponentNameTop">יריב</div>
+          <div class="mini-score">
+            ניצחונות: <span id="opWinsTop">0</span><br>
+            התקדמות: <span id="opProgressTop">0</span>/10<br>
+            שאלה: <span id="opQuestionTop">1</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="track-wrap">
+        <div>
+          <div class="track-title" id="myTrackTitle">אני</div>
+          <div class="track">
+            <div class="track-line"></div>
+            <div class="finish">🏁</div>
+            <div class="runner" id="myRunner" style="left:0%">🚀</div>
+          </div>
+        </div>
+        <div>
+          <div class="track-title" id="opTrackTitle">יריב</div>
+          <div class="track">
+            <div class="track-line"></div>
+            <div class="finish">🏁</div>
+            <div class="runner opponent" id="opRunner" style="left:0%">⚡</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="question-box">
+        <div class="question-index" id="questionIndex">שאלה 1</div>
+        <div class="question-text" id="questionText">ממתינים לשאלה…</div>
+        <div class="answers" id="answersBox"></div>
+        <div class="notice" id="noticeBox">ענה נכון ותתקדם צעד. אם טעית, נשארים במקום ועוברים לשאלה הבאה.</div>
+      </div>
+    </section>
+
+    <section id="screen-result" class="card hidden result-card">
+      <div class="result-icon" id="resultIcon">🏆</div>
+      <div class="result-title" id="resultTitle">יש מנצח</div>
+      <div class="result-sub" id="resultSub">הסבב הסתיים. אפשר להתחיל סבב נוסף.</div>
+
+      <div class="result-score-row">
+        <div class="result-score-item">
+          <div class="result-score-name" id="resultMeName">אני</div>
+          <div class="result-score-value"><span id="resultMeWins">0</span> ניצחונות</div>
+        </div>
+        <div class="result-score-sep">•</div>
+        <div class="result-score-item">
+          <div class="result-score-name" id="resultOpName">יריב</div>
+          <div class="result-score-value"><span id="resultOpWins">0</span> ניצחונות</div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary hidden" id="nextRoundBtn" style="width:100%;margin-top:18px">התחל סבב נוסף 🚀</button>
+      <div class="notice result-notice" id="resultNotice">ממתינים למארח להתחיל מירוץ חדש…</div>
+    </section>
+  </div>
+
+  <div id="setupOverlay" class="setup-overlay hidden">
+    <div class="setup-box">
+      <h3>צריך לחבר Firebase פעם אחת</h3>
+      <p>הקובץ כמעט מוכן. אם משהו לא עובד, בדוק במיוחד את <code>databaseURL</code> בתוך <code>FIREBASE_CONFIG</code>.</p>
+      <ol class="steps">
+        <li>הפעל Realtime Database במצב test.</li>
+        <li>ודא ש־<code>databaseURL</code> תקין ובשורה אחת.</li>
+        <li>כדי שקישור הזמנה יהיה לחיץ, אחסן את הקובץ אונליין.</li>
+      </ol>
+      <button class="btn btn-primary" id="closeSetupBtn" style="width:100%;margin-top:14px">הבנתי</button>
+    </div>
+  </div>
+
+  <script>
+    const FIREBASE_CONFIG = {
+      apiKey: "AIzaSyCBa0XIboAWJIeiH6Wqer74sSiMyRKfK2s",
+      authDomain: "game1-9d372.firebaseapp.com",
+      databaseURL: "https://game1-9d372-default-rtdb.firebaseio.com",
+      projectId: "game1-9d372",
+      storageBucket: "game1-9d372.firebasestorage.app",
+      messagingSenderId: "387028062033",
+      appId: "1:387028062033:web:7bf29040c7bb4b15d54d70"
+    };
+
+    const QUESTIONS = [
+      {q:"מהי בירת צרפת?", a:["רומא","פריז","ברלין"], c:1},
+      {q:"כמה ימים יש בשבוע?", a:["7","8","6"], c:0},
+      {q:"איזה כוכב הוא הקרוב ביותר לשמש?", a:["כדור הארץ","נוגה","חמה"], c:2},
+      {q:"כמה פאות יש לריבוע?", a:["3","4","5"], c:1},
+      {q:"איזו חיה נחשבת למלך החיות?", a:["אריה","פיל","זאב"], c:0},
+      {q:"מהו הצבע שמתקבל מערבוב כחול וצהוב?", a:["ירוק","אדום","סגול"], c:0},
+      {q:"כמה חודשים יש בשנה?", a:["10","11","12"], c:2},
+      {q:"מהו האוקיינוס הגדול בעולם?", a:["האטלנטי","השקט","ההודי"], c:1},
+      {q:"איזו יבשת היא הגדולה ביותר?", a:["אירופה","אסיה","אפריקה"], c:1},
+      {q:"כמה דקות יש בשעה?", a:["60","30","90"], c:0},
+      {q:"איזה מכשיר מציג זמן?", a:["שעון","מקרר","מחברת"], c:0},
+      {q:"איזו עונה באה אחרי האביב?", a:["חורף","קיץ","סתיו"], c:1},
+      {q:"מהו 9 פחות 4?", a:["5","6","7"], c:0},
+      {q:"איזה צבע יש לעשב בדרך כלל?", a:["ירוק","כתום","שחור"], c:0},
+      {q:"כמה גלגלים יש לאופניים רגילים?", a:["1","2","3"], c:1}
+    ];
+
+    const FINISH_STEPS = 10;
+    const QUESTION_TIME = 5;
+
+    const screens = {
+      home: document.getElementById('screen-home'),
+      invite: document.getElementById('screen-invite'),
+      joinLink: document.getElementById('screen-join-link'),
+      game: document.getElementById('screen-game'),
+      result: document.getElementById('screen-result')
+    };
+
+    const els = {
+      playerName: document.getElementById('playerName'),
+      createRoomBtn: document.getElementById('createRoomBtn'),
+      showJoinBtn: document.getElementById('showJoinBtn'),
+      joinPanel: document.getElementById('joinPanel'),
+      roomCodeInput: document.getElementById('roomCodeInput'),
+      joinRoomBtn: document.getElementById('joinRoomBtn'),
+      roomCodeLabel: document.getElementById('roomCodeLabel'),
+      inviteLink: document.getElementById('inviteLink'),
+      whatsappBtn: document.getElementById('whatsappBtn'),
+      copyInviteBtn: document.getElementById('copyInviteBtn'),
+      hostNameWait: document.getElementById('hostNameWait'),
+      guestNameWait: document.getElementById('guestNameWait'),
+      guestWaitStatus: document.getElementById('guestWaitStatus'),
+      autoJoinRoomCode: document.getElementById('autoJoinRoomCode'),
+      playerNameJoinLink: document.getElementById('playerNameJoinLink'),
+      joinFromLinkBtn: document.getElementById('joinFromLinkBtn'),
+      meNameTop: document.getElementById('meNameTop'),
+      meWinsTop: document.getElementById('meWinsTop'),
+      meProgressTop: document.getElementById('meProgressTop'),
+      meQuestionTop: document.getElementById('meQuestionTop'),
+      opponentNameTop: document.getElementById('opponentNameTop'),
+      opWinsTop: document.getElementById('opWinsTop'),
+      opProgressTop: document.getElementById('opProgressTop'),
+      opQuestionTop: document.getElementById('opQuestionTop'),
+      roundBadge: document.getElementById('roundBadge'),
+      myRunner: document.getElementById('myRunner'),
+      opRunner: document.getElementById('opRunner'),
+      myTrackTitle: document.getElementById('myTrackTitle'),
+      opTrackTitle: document.getElementById('opTrackTitle'),
+      timerRing: document.getElementById('timerRing'),
+      timerText: document.getElementById('timerText'),
+      questionIndex: document.getElementById('questionIndex'),
+      questionText: document.getElementById('questionText'),
+      answersBox: document.getElementById('answersBox'),
+      noticeBox: document.getElementById('noticeBox'),
+      resultTitle: document.getElementById('resultTitle'),
+      resultSub: document.getElementById('resultSub'),
+      resultMeName: document.getElementById('resultMeName'),
+      resultMeWins: document.getElementById('resultMeWins'),
+      resultOpName: document.getElementById('resultOpName'),
+      resultOpWins: document.getElementById('resultOpWins'),
+      nextRoundBtn: document.getElementById('nextRoundBtn'),
+      resultNotice: document.getElementById('resultNotice'),
+      setupOverlay: document.getElementById('setupOverlay'),
+      closeSetupBtn: document.getElementById('closeSetupBtn')
+    };
+
+    let app, db, roomsRef;
+    let roomCode = '';
+    let playerId = localStorage.getItem('trivia_race_player_id') || crypto.randomUUID();
+    let myName = localStorage.getItem('trivia_race_player_name') || '';
+    let selectedCharacter = localStorage.getItem('trivia_race_character') || '🚀';
+    let isHost = false;
+    let roomListener = null;
+    let roomState = null;
+    let timerInterval = null;
+    let questionTimeout = null;
+    let currentRenderedQuestionIndex = -1;
+
+    localStorage.setItem('trivia_race_player_id', playerId);
+
+    function isFirebaseConfigured() {
+      return !!(FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.databaseURL);
+    }
+
+
+    function syncCharacterPickers() {
+      document.querySelectorAll('.char-option').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.char === selectedCharacter);
+      });
+    }
+
+    function setupCharacterPickers() {
+      document.querySelectorAll('.char-option').forEach(btn => {
+        btn.onclick = () => {
+          selectedCharacter = btn.dataset.char;
+          localStorage.setItem('trivia_race_character', selectedCharacter);
+          syncCharacterPickers();
+        };
+      });
+      syncCharacterPickers();
+    }
+
+    function initFirebase() {
+      if (!isFirebaseConfigured()) {
+        els.setupOverlay.classList.remove('hidden');
+        return false;
+      }
+      try {
+        app = firebase.initializeApp(FIREBASE_CONFIG);
+        db = firebase.database();
+        roomsRef = db.ref('trivia_race_rooms_v1');
+        return true;
+      } catch (e) {
+        console.error(e);
+        alert('יש שגיאה בהגדרות Firebase.');
+        els.setupOverlay.classList.remove('hidden');
+        return false;
+      }
+    }
+
+    function showScreen(name) {
+      Object.values(screens).forEach(s => s.classList.add('hidden'));
+      screens[name].classList.remove('hidden');
+      const hero = document.getElementById('heroSection');
+      if (hero) {
+        hero.classList.toggle('hidden', name !== 'home');
+      }
+    }
+
+    function sanitizeName(name) {
+      return (name || '').trim().replace(/\s+/g, ' ').slice(0, 20);
+    }
+
+    function setNameEverywhere(name) {
+      myName = sanitizeName(name);
+      localStorage.setItem('trivia_race_player_name', myName);
+      localStorage.setItem('trivia_race_character', selectedCharacter);
+      els.playerName.value = myName;
+      els.playerNameJoinLink.value = myName;
+      syncCharacterPickers();
+    }
+
+    function generateRoomCode() {
+      return Math.random().toString(36).slice(2, 8).toUpperCase();
+    }
+
+    function inviteUrl(code) {
+      if (window.location.protocol === 'file:') return '';
+      const url = new URL(window.location.href);
+      url.searchParams.set('room', code);
+      return url.toString();
+    }
+
+    function buildInviteText(code) {
+      const link = inviteUrl(code);
+      return link
+        ? `בוא למשחק טריוויה מולי\nהצטרף כאן: ${link}\nקוד חדר: ${code}`
+        : `בוא למשחק טריוויה מולי\nקוד חדר: ${code}`;
+    }
+
+    function myPlayer(room) {
+      return room?.players?.[playerId] || null;
+    }
+
+    function otherPlayer(room) {
+      const players = Object.entries(room?.players || {}).filter(([id]) => id !== playerId);
+      return players[0] ? { id: players[0][0], ...players[0][1] } : null;
+    }
+
+    function roomPlayersCount(room) {
+      return Object.keys(room?.players || {}).length;
+    }
+
+    function getQuestionForPlayer(player) {
+      const idx = player?.questionIndex || 0;
+      return QUESTIONS[idx % QUESTIONS.length];
+    }
+
+    function moveRunner(el, progress) {
+      const percent = Math.max(0, Math.min(100, (progress / FINISH_STEPS) * 100));
+      el.style.left = `calc(${percent}% + ${percent === 100 ? -8 : 0}px)`;
+      el.classList.add('bump');
+      setTimeout(() => el.classList.remove('bump'), 180);
+    }
+
+    function clearQuestionTimer() {
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = null;
+      if (questionTimeout) clearTimeout(questionTimeout);
+      questionTimeout = null;
+    }
+
+    function runTimer() {
+      clearQuestionTimer();
+
+      const me = myPlayer(roomState);
+      if (!me || roomState?.status !== 'playing') return;
+
+      const startedAt = me.questionStartedAt || Date.now();
+      const finishAt = startedAt + QUESTION_TIME * 1000;
+
+      const tick = () => {
+        const leftMs = Math.max(0, finishAt - Date.now());
+        const seconds = Math.ceil(leftMs / 1000);
+        const pct = Math.max(0, Math.min(100, (leftMs / (QUESTION_TIME * 1000)) * 100));
+        els.timerText.textContent = seconds;
+        const ringColor = seconds <= 3 ? 'var(--bad)' : 'var(--primary)';
+        els.timerRing.classList.toggle('warning', seconds <= 3);
+        els.timerRing.style.background = `conic-gradient(${ringColor} ${pct}%, rgba(255,255,255,.08) ${pct}% 100%)`;
+      };
+
+      tick();
+      timerInterval = setInterval(tick, 120);
+
+      questionTimeout = setTimeout(() => {
+        forceAdvanceOnTimeout();
+      }, Math.max(0, finishAt - Date.now() + 30));
+    }
+
+    async function forceAdvanceOnTimeout() {
+      if (!roomState || roomState.status !== 'playing') return;
+      const me = myPlayer(roomState);
+      if (!me) return;
+      if (me.lastAnsweredQuestionIndex === me.questionIndex) return;
+      await advanceMyQuestion(false, true);
+    }
+
+    async function createRoom() {
+      const name = sanitizeName(els.playerName.value);
+      if (!name) return alert('כתוב שם קודם');
+      setNameEverywhere(name);
+
+      roomCode = generateRoomCode();
+      isHost = true;
+
+      const roomData = {
+        code: roomCode,
+        createdAt: Date.now(),
+        status: 'waiting',
+        hostId: playerId,
+        round: 1,
+        winnerId: '',
+        players: {
+          [playerId]: {
+            id: playerId,
+            name,
+            joinedAt: Date.now(),
+            online: true,
+            character: selectedCharacter,
+            wins: 0,
+            progress: 0,
+            questionIndex: 0,
+            questionStartedAt: 0,
+            lastAnsweredQuestionIndex: -1,
+            finishedAt: 0
+          }
+        }
+      };
+
+      await roomsRef.child(roomCode).set(roomData);
+      listenRoom(roomCode);
+      renderInvite(roomData);
+      showScreen('invite');
+    }
+
+    async function joinRoomByCode(code, name) {
+      const cleanCode = (code || '').trim().toUpperCase();
+      const cleanName = sanitizeName(name);
+
+      if (!cleanName) return alert('כתוב שם קודם');
+      if (!cleanCode) return alert('הכנס קוד חדר');
+
+      setNameEverywhere(cleanName);
+      roomCode = cleanCode;
+
+      const snap = await roomsRef.child(roomCode).get();
+      if (!snap.exists()) return alert('החדר לא נמצא');
+
+      const room = snap.val();
+      const playersCount = roomPlayersCount(room);
+      const alreadyInside = !!room.players?.[playerId];
+      if (playersCount >= 2 && !alreadyInside) return alert('החדר כבר מלא');
+
+      isHost = room.hostId === playerId;
+
+      await roomsRef.child(roomCode).child('players').child(playerId).update({
+        id: playerId,
+        name: cleanName,
+        joinedAt: Date.now(),
+        online: true,
+        character: selectedCharacter,
+        wins: room.players?.[playerId]?.wins || 0,
+        progress: room.players?.[playerId]?.progress || 0,
+        questionIndex: room.players?.[playerId]?.questionIndex || 0,
+        questionStartedAt: room.players?.[playerId]?.questionStartedAt || 0,
+        lastAnsweredQuestionIndex: room.players?.[playerId]?.lastAnsweredQuestionIndex ?? -1,
+        finishedAt: room.players?.[playerId]?.finishedAt || 0
+      });
+
+      if (room.status === 'waiting' && roomPlayersCount(room) + (alreadyInside ? 0 : 1) >= 2 && room.hostId === room.hostId) {
+        await startRoundIfReady(cleanCode);
+      }
+
+      listenRoom(roomCode);
+    }
+
+    async function startRoundIfReady(code) {
+      const snap = await roomsRef.child(code).get();
+      if (!snap.exists()) return;
+      const room = snap.val();
+      if (room.status !== 'waiting') return;
+      if (roomPlayersCount(room) < 2) return;
+
+      const updates = {
+        status: 'playing',
+        winnerId: ''
+      };
+
+      Object.keys(room.players || {}).forEach((pid) => {
+        updates[`players/${pid}/progress`] = 0;
+        updates[`players/${pid}/questionIndex`] = 0;
+        updates[`players/${pid}/questionStartedAt`] = Date.now();
+        updates[`players/${pid}/lastAnsweredQuestionIndex`] = -1;
+        updates[`players/${pid}/finishedAt`] = 0;
+        updates[`players/${pid}/online`] = true;
+      });
+
+      await roomsRef.child(code).update(updates);
+    }
+
+    function listenRoom(code) {
+      if (roomListener && roomCode) {
+        roomsRef.child(roomCode).off('value', roomListener);
+      }
+
+      roomCode = code;
+      roomListener = (snap) => {
+        if (!snap.exists()) {
+          alert('החדר נסגר');
+          location.href = location.pathname;
+          return;
+        }
+        roomState = snap.val();
+        autoFlow(roomState);
+      };
+
+      roomsRef.child(roomCode).on('value', roomListener);
+      window.addEventListener('beforeunload', markOffline);
+    }
+
+    function autoFlow(room) {
+      const me = myPlayer(room);
+      if (!me) return;
+
+      if (room.status === 'waiting') {
+        clearQuestionTimer();
+        renderInvite(room);
+        showScreen('invite');
+        return;
+      }
+
+      if (room.status === 'playing') {
+        showScreen('game');
+        renderGame(room);
+        return;
+      }
+
+      if (room.status === 'round_end') {
+        clearQuestionTimer();
+        showScreen('result');
+        renderResult(room);
+      }
+    }
+
+    function renderInvite(room) {
+      els.roomCodeLabel.textContent = room.code;
+      const url = inviteUrl(room.code);
+      if (url) {
+        els.inviteLink.href = url;
+        els.inviteLink.textContent = url;
+      } else {
+        els.inviteLink.removeAttribute('href');
+        els.inviteLink.textContent = 'כרגע הקובץ פתוח מקומית. שלח את קוד החדר: ' + room.code;
+      }
+
+      const me = myPlayer(room);
+      const opponent = otherPlayer(room);
+
+      els.hostNameWait.textContent = room.players[room.hostId]?.name || me?.name || 'שחקן 1';
+      els.guestNameWait.textContent = opponent ? opponent.name : 'ממתין לשחקן נוסף…';
+      els.guestWaitStatus.textContent = opponent ? 'התחבר לחדר' : 'עדיין לא נכנס';
+      els.guestWaitStatus.className = 'player-status ' + (opponent ? 'status-on' : 'status-off');
+    }
+
+    function renderGame(room) {
+      const me = myPlayer(room);
+      const opponent = otherPlayer(room) || { name:'יריב', wins:0, progress:0, questionIndex:0 };
+      const myQuestion = getQuestionForPlayer(me);
+
+      els.meNameTop.textContent = me.name;
+      els.opponentNameTop.textContent = opponent.name;
+      els.myTrackTitle.textContent = me.name;
+      els.opTrackTitle.textContent = opponent.name;
+      els.meWinsTop.textContent = me.wins || 0;
+      els.opWinsTop.textContent = opponent.wins || 0;
+      els.meProgressTop.textContent = me.progress || 0;
+      els.opProgressTop.textContent = opponent.progress || 0;
+      els.meQuestionTop.textContent = (me.questionIndex || 0) + 1;
+      els.opQuestionTop.textContent = (opponent.questionIndex || 0) + 1;
+      els.roundBadge.textContent = 'סבב ' + (room.round || 1);
+
+      els.myRunner.textContent = me.character || '🚀';
+      els.opRunner.textContent = opponent.character || '⚡';
+      moveRunner(els.myRunner, me.progress || 0);
+      moveRunner(els.opRunner, opponent.progress || 0);
+
+      els.questionIndex.textContent = `🧠 שאלה ${(me.questionIndex || 0) + 1}`;
+      els.questionText.textContent = myQuestion.q;
+      renderAnswers(me, myQuestion);
+      updateNotice(me, opponent, myQuestion);
+      if (currentRenderedQuestionIndex !== me.questionIndex) {
+        currentRenderedQuestionIndex = me.questionIndex;
+      }
+      runTimer();
+    }
+
+    function renderAnswers(me, question) {
+      const alreadyAnswered = me.lastAnsweredQuestionIndex === me.questionIndex;
+      els.answersBox.innerHTML = '';
+
+      question.a.forEach((ans, index) => {
+        const btn = document.createElement('button');
+        btn.className = 'answer' + (alreadyAnswered ? ' locked' : '');
+        btn.textContent = ans;
+
+        if (alreadyAnswered) {
+          const lastCorrect = me.lastAnswerCorrect === true;
+          if (index === question.c) btn.classList.add('correct');
+          if (!lastCorrect && index === me.lastAnswerChoice && index !== question.c) btn.classList.add('wrong');
+        }
+
+        btn.onclick = () => submitAnswer(index);
+        els.answersBox.appendChild(btn);
+      });
+    }
+
+    function updateNotice(me, opponent, question) {
+      const alreadyAnswered = me.lastAnsweredQuestionIndex === me.questionIndex;
+      els.noticeBox.className = 'notice';
+      if (!alreadyAnswered) {
+        els.noticeBox.textContent = `אתה בשאלה ${(me.questionIndex || 0) + 1}. תשובה נכונה תקדם אותך צעד אחד. הראשון שמגיע ל־10 תשובות נכונות מנצח מיד. היריב כרגע על שאלה ${(opponent.questionIndex || 0) + 1}.`;
+        return;
+      }
+
+      if (me.lastAnswerCorrect) {
+        els.noticeBox.classList.add('good');
+        els.noticeBox.textContent = '🔥 נכון! התקדמת צעד אחד ועברת מיד לשאלה הבאה.';
+      } else {
+        els.noticeBox.classList.add('bad');
+        els.noticeBox.textContent = '❌ לא נכון. נשארת במקום, אבל ממשיכים מיד לשאלה הבאה.';
+      }
+    }
+
+    async function submitAnswer(choiceIndex) {
+      if (!roomState || roomState.status !== 'playing') return;
+
+      const me = myPlayer(roomState);
+      if (!me) return;
+      if (me.lastAnsweredQuestionIndex === me.questionIndex) return;
+
+      const question = getQuestionForPlayer(me);
+      if (!question) return;
+
+      const isCorrect = choiceIndex === question.c;
+      await advanceMyQuestion(isCorrect, false, choiceIndex);
+    }
+
+    async function advanceMyQuestion(isCorrect, fromTimeout = false, answerChoice = -1) {
+      if (!roomState || roomState.status !== 'playing') return;
+
+      const freshSnap = await roomsRef.child(roomCode).get();
+      if (!freshSnap.exists()) return;
+      const freshRoom = freshSnap.val();
+      const me = freshRoom.players?.[playerId];
+      if (!me) return;
+      if (freshRoom.status !== 'playing') return;
+      if (me.lastAnsweredQuestionIndex === me.questionIndex) return;
+
+      const currentQIndex = me.questionIndex || 0;
+      const nextQIndex = currentQIndex + 1;
+      const newProgress = Math.min(FINISH_STEPS, (me.progress || 0) + (isCorrect ? 1 : 0));
+      const now = Date.now();
+
+      const updates = {
+        [`players/${playerId}/progress`]: newProgress,
+        [`players/${playerId}/questionIndex`]: nextQIndex,
+        [`players/${playerId}/questionStartedAt`]: now,
+        [`players/${playerId}/lastAnsweredQuestionIndex`]: currentQIndex,
+        [`players/${playerId}/lastAnswerCorrect`]: !!isCorrect,
+        [`players/${playerId}/lastAnswerChoice`]: answerChoice,
+      };
+
+      if (newProgress >= FINISH_STEPS) {
+        updates[`players/${playerId}/finishedAt`] = now;
+        updates['winnerId'] = playerId;
+        updates['status'] = 'round_end';
+        updates[`players/${playerId}/wins`] = (me.wins || 0) + 1;
+      }
+
+      await roomsRef.child(roomCode).update(updates);
+    }
+
+    function renderResult(room) {
+      const me = myPlayer(room);
+      const opponent = otherPlayer(room) || { name:'יריב', wins:0 };
+      const winnerId = room.winnerId;
+      const winnerName = room.players?.[winnerId]?.name || 'יש מנצח';
+      const resultIcon = document.getElementById('resultIcon');
+
+      els.resultTitle.textContent = winnerId === playerId ? 'ניצחת בסבב' : `${winnerName} ניצח בסבב`;
+      els.resultSub.textContent = winnerId === playerId
+        ? 'סיימת ראשון ל־10 תשובות נכונות.'
+        : `הפעם ${winnerName} הגיע ראשון ל־10 תשובות נכונות.`;
+      if (resultIcon) {
+        resultIcon.textContent = winnerId === playerId ? '🏆' : '🎯';
+      }
+      els.resultMeName.textContent = me.name;
+      els.resultOpName.textContent = opponent.name;
+      els.resultMeWins.textContent = me.wins || 0;
+      els.resultOpWins.textContent = opponent.wins || 0;
+      els.nextRoundBtn.classList.toggle('hidden', !isHost);
+      els.resultNotice.textContent = isHost ? 'כשתהיה מוכן, אפשר להתחיל מירוץ נוסף.' : 'ממתינים למארח להתחיל מירוץ חדש…';
+    }
+
+    async function startNextRound() {
+      if (!isHost || !roomState) return;
+
+      const freshSnap = await roomsRef.child(roomCode).get();
+      if (!freshSnap.exists()) return;
+      const freshRoom = freshSnap.val();
+
+      const updates = {
+        status: 'playing',
+        winnerId: '',
+        round: (freshRoom.round || 1) + 1
+      };
+
+      Object.keys(freshRoom.players || {}).forEach((pid) => {
+        updates[`players/${pid}/progress`] = 0;
+        updates[`players/${pid}/questionIndex`] = 0;
+        updates[`players/${pid}/questionStartedAt`] = Date.now();
+        updates[`players/${pid}/lastAnsweredQuestionIndex`] = -1;
+        updates[`players/${pid}/lastAnswerCorrect`] = false;
+        updates[`players/${pid}/lastAnswerChoice`] = -1;
+        updates[`players/${pid}/finishedAt`] = 0;
+      });
+
+      currentRenderedQuestionIndex = -1;
+      await roomsRef.child(roomCode).update(updates);
+    }
+
+    async function markOffline() {
+      try {
+        if (roomCode && db) {
+          await roomsRef.child(roomCode).child('players').child(playerId).update({ online:false });
+        }
+      } catch (e) {}
+    }
+
+    function setupActions() {
+      els.createRoomBtn.onclick = () => createRoom();
+      els.showJoinBtn.onclick = () => els.joinPanel.classList.toggle('hidden');
+      els.joinRoomBtn.onclick = () => joinRoomByCode(els.roomCodeInput.value, els.playerName.value);
+      els.joinFromLinkBtn.onclick = () => joinRoomByCode(roomCode, els.playerNameJoinLink.value);
+      els.nextRoundBtn.onclick = () => startNextRound();
+      els.copyInviteBtn.onclick = async () => {
+        const text = buildInviteText(roomCode);
+        await navigator.clipboard.writeText(text);
+        els.copyInviteBtn.textContent = 'הועתק';
+        setTimeout(() => els.copyInviteBtn.textContent = 'העתק הזמנה', 1200);
+      };
+      els.whatsappBtn.onclick = () => {
+        const text = encodeURIComponent(buildInviteText(roomCode));
+        window.open(`https://wa.me/?text=${text}`, '_blank');
+      };
+      els.closeSetupBtn.onclick = () => els.setupOverlay.classList.add('hidden');
+    }
+
+    function autoJoinFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const room = (params.get('room') || '').trim().toUpperCase();
+
+      if (!room) {
+        if (myName) els.playerName.value = myName;
+        showScreen('home');
+        return;
+      }
+
+      roomCode = room;
+      els.autoJoinRoomCode.textContent = room;
+      if (myName) els.playerNameJoinLink.value = myName;
+      showScreen('joinLink');
+    }
+
+    function boot() {
+      setupActions();
+      setupCharacterPickers();
+      if (myName) {
+        els.playerName.value = myName;
+        els.playerNameJoinLink.value = myName;
+      }
+      syncCharacterPickers();
+      if (!initFirebase()) {
+        autoJoinFromUrl();
+        return;
+      }
+      autoJoinFromUrl();
+    }
+
+    boot();
+  </script>
+</body>
+</html>
