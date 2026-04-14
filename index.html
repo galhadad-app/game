@@ -148,6 +148,27 @@
       </div>
     </section>
 
+    <section id="screen-linkjoin" class="screen">
+      <div class="card center">
+        <div class="waiting-badge" style="width:74px;height:74px"></div>
+        <h2 class="section-title">הצטרפות לחדר</h2>
+        <p class="small mt">נכנסת מהזמנה. ממלאים שם ולוחצים על הכפתור — ואתה בפנים.</p>
+
+        <div class="mt-lg row wrap" style="justify-content:center">
+          <div class="pill">קוד חדר: <strong id="deepLinkRoomCode"></strong></div>
+        </div>
+
+        <div class="grid mt-lg" style="text-align:right">
+          <div>
+            <label for="linkJoinName">שם שחקן</label>
+            <input id="linkJoinName" maxlength="18" placeholder="לדוגמה: דוד" />
+          </div>
+          <button id="linkJoinBtn" class="primary full">הצטרף עכשיו לחדר</button>
+          <button id="backHomeBtn" class="ghost full">חזור למסך הראשי</button>
+        </div>
+      </div>
+    </section>
+
     <section id="screen-lobby" class="screen">
       <div class="card center">
         <div class="waiting-badge"></div>
@@ -258,7 +279,7 @@
 
   const $ = (id) => document.getElementById(id);
   const screens = {
-    home: $('screen-home'), lobby: $('screen-lobby'), game: $('screen-game')
+    home: $('screen-home'), linkjoin: $('screen-linkjoin'), lobby: $('screen-lobby'), game: $('screen-game')
   };
 
   let state = null;
@@ -273,14 +294,24 @@
   let answersSub = null;
 
   $('playerName').value = myName;
+  if($('linkJoinName')) $('linkJoinName').value = myName;
 
   function showScreen(name){
     Object.values(screens).forEach(s => s.classList.remove('active'));
     screens[name].classList.add('active');
   }
 
+  function activeNameInput(){
+    return screens.linkjoin.classList.contains('active') ? $('linkJoinName') : $('playerName');
+  }
+
   function saveName(){
-    myName = $('playerName').value.trim() || myName || 'שחקן';
+    const input = activeNameInput();
+    const typed = input ? input.value.trim() : '';
+    myName = typed || myName || 'שחקן';
+    $('playerName').value = myName;
+  if($('linkJoinName')) $('linkJoinName').value = myName;
+    if($('linkJoinName')) $('linkJoinName').value = myName;
     localStorage.setItem('trivia_name', myName);
     return myName;
   }
@@ -315,7 +346,7 @@
   function setInviteUI(){
     $('lobbyCode').textContent = roomCode;
     const url = baseUrl() + '?room=' + encodeURIComponent(roomCode);
-    $('inviteBox').innerHTML = `קוד חדר: <strong>${roomCode}</strong><br><a href="${url}">${url}</a>`;
+    $('inviteBox').innerHTML = `קוד חדר: <strong>${roomCode}</strong><br>קישור לחיץ להצטרפות:<br><a href="${url}">${url}</a>`;
   }
 
   function createTrack(elId, position){
@@ -545,11 +576,16 @@
     if(!roomCode) return alert('יש להזין קוד חדר');
     ROOMS.get(roomCode).get('state').once(data => {
       if(!data || !data.hostPid) return alert('החדר לא נמצא');
-      if(data.guestPid && data.guestPid !== myPid && data.hostPid !== myPid) return alert('החדר כבר מלא');
+      if(data.hostPid === myPid){
+        setupListeners();
+        showScreen(data.phase === 'waiting' ? 'lobby' : 'game');
+        return;
+      }
+      if(data.guestPid && data.guestPid !== myPid) return alert('החדר כבר מלא');
       const patch = {
         ...data,
-        guestPid: data.guestPid || myPid,
-        guestName: data.guestPid && data.guestPid !== myPid ? data.guestName : myName,
+        guestPid: myPid,
+        guestName: myName,
       };
       if(!patch.wins) patch.wins = {};
       patch.wins[patch.hostPid] = patch.wins[patch.hostPid] || 0;
@@ -557,10 +593,13 @@
       writeRoom(patch);
       setupListeners();
       showScreen('game');
-      showAnnounce('נכנסת לחדר. מתחילים...', 'info');
+      showAnnounce('נכנסת לחדר. ממתינים להתחלת המשחק...', 'info');
       setTimeout(() => {
-        if(myRole(normalizeState(patch)) === 'host') startIfReady();
-      }, 300);
+        ROOMS.get(roomCode).get('state').once(latest => {
+          const s = normalizeState(latest);
+          if(s.hostPid === myPid) startIfReady();
+        });
+      }, 350);
     });
   }
 
@@ -707,7 +746,12 @@
     if(state.phase === 'waiting'){
       if(myRole(state) === 'host') showScreen('lobby');
       else showScreen('game');
-      if(myRole(state) === 'host' && state.guestPid) startIfReady();
+      if(myRole(state) === 'host' && state.guestPid){
+        showAnnounce('השחקן השני נכנס. מתחילים...', 'success');
+        startIfReady();
+      } else if(myRole(state) === 'host') {
+        hideAnnounce();
+      }
       return;
     }
 
@@ -794,12 +838,16 @@
   $('copyBtn').onclick = copyInvite;
   $('waBtn').onclick = sendWhatsApp;
   $('leaveBtn').onclick = leaveGame;
+  $('linkJoinBtn').onclick = () => joinRoom($('deepLinkRoomCode').textContent || $('roomCode').value);
+  $('backHomeBtn').onclick = () => { history.replaceState({}, '', baseUrl()); showScreen('home'); };
 
   const qp = new URLSearchParams(location.search);
   const preRoom = qp.get('room');
   if(preRoom){
-    $('joinPanel').classList.remove('hidden');
     $('roomCode').value = preRoom;
+    $('deepLinkRoomCode').textContent = preRoom;
+    $('linkJoinName').value = myName;
+    showScreen('linkjoin');
   }
 
   createTrack('track1', 0);
