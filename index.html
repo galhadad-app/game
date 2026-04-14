@@ -1,858 +1,95 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>מרוץ טריוויה זוגי</title>
-  <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
-  <style>
-    :root{
-      --bg:#f6f7fb;
-      --card:#ffffff;
-      --text:#16181d;
-      --muted:#6d7485;
-      --line:#e8ebf2;
-      --primary:#4c6fff;
-      --primary-2:#edf1ff;
-      --success:#17a36b;
-      --danger:#e24a4a;
-      --gold:#ffbf47;
-      --shadow:0 12px 30px rgba(18,29,62,.08);
-      --radius:22px;
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family:Arial,"Heebo",sans-serif;
-      background:
-        radial-gradient(circle at top right, rgba(76,111,255,.12), transparent 28%),
-        radial-gradient(circle at bottom left, rgba(23,163,107,.08), transparent 26%),
-        var(--bg);
-      color:var(--text);
-      min-height:100vh;
-    }
-    .app{max-width:720px;margin:0 auto;padding:18px 14px 30px}
-    .screen{display:none;animation:fade .26s ease}
-    .screen.active{display:block}
-    @keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}
-    .hero{padding:24px 18px;margin-top:8px}
-    h1,h2,h3,p{margin:0}
-    .title{font-size:30px;font-weight:800;letter-spacing:-.4px}
-    .subtitle{margin-top:10px;color:var(--muted);line-height:1.6;font-size:15px}
-    .grid{display:grid;gap:14px}
-    .row{display:flex;gap:10px;align-items:center}
-    .row.wrap{flex-wrap:wrap}
-    .mt{margin-top:14px}
-    .mt-lg{margin-top:18px}
-    label{display:block;font-size:14px;font-weight:700;margin-bottom:7px}
-    input{
-      width:100%;border:1px solid var(--line);background:#fff;border-radius:16px;
-      padding:14px 14px;font-size:16px;outline:none;color:var(--text)
-    }
-    input:focus{border-color:#b7c4ff;box-shadow:0 0 0 4px rgba(76,111,255,.12)}
-    button,.btn{
-      appearance:none;border:none;border-radius:16px;padding:14px 16px;cursor:pointer;
-      font-size:15px;font-weight:800;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;
-      transition:.18s transform,.18s opacity,.18s box-shadow
-    }
-    button:active,.btn:active{transform:scale(.98)}
-    .primary{background:var(--primary);color:#fff;box-shadow:0 10px 24px rgba(76,111,255,.24)}
-    .secondary{background:var(--primary-2);color:var(--primary)}
-    .ghost{background:#fff;color:var(--text);border:1px solid var(--line)}
-    .danger{background:#fff0f0;color:var(--danger)}
-    .full{width:100%}
-    .split{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .section-title{font-size:18px;font-weight:800;margin-bottom:10px}
-    .pill{display:inline-flex;align-items:center;gap:6px;background:#f5f7fc;border:1px solid var(--line);border-radius:999px;padding:8px 12px;font-size:13px;color:var(--muted)}
-    .small{font-size:13px;color:var(--muted);line-height:1.6}
-    .invite-box{padding:12px 14px;border-radius:16px;background:#f7f9ff;border:1px dashed #c9d3ff;word-break:break-all;font-size:14px;color:#32406a}
-    .center{text-align:center}
-    .waiting-badge{width:86px;height:86px;border-radius:50%;margin:0 auto 14px;background:linear-gradient(135deg,#4c6fff,#7692ff);position:relative;box-shadow:0 16px 30px rgba(76,111,255,.24)}
-    .waiting-badge:before,.waiting-badge:after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid rgba(76,111,255,.18);animation:pulse 1.9s infinite}
-    .waiting-badge:after{animation-delay:.8s}
-    @keyframes pulse{from{transform:scale(1);opacity:.9}to{transform:scale(1.5);opacity:0}}
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trivia Firebase</title>
 
-    .hud{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
-    .status-right{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-    .scoreboard{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    .player-card{padding:14px;border-radius:18px;background:#fbfcff;border:1px solid var(--line)}
-    .player-top{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px}
-    .player-name{font-weight:800;font-size:16px}
-    .wins{font-size:13px;color:var(--muted)}
-    .track{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;direction:ltr}
-    .step{height:12px;border-radius:999px;background:#e8ebf2;position:relative;overflow:hidden}
-    .step.on{background:linear-gradient(90deg,#4c6fff,#17a36b)}
-    .step.finish{box-shadow:0 0 0 2px rgba(255,191,71,.28) inset}
-    .question-card{padding:18px}
-    .question-top{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:12px}
-    .q-index{font-size:13px;color:var(--muted);font-weight:700}
-    .timer-wrap{min-width:110px;text-align:left}
-    .timer-num{font-size:24px;font-weight:900}
-    .timer-bar{height:8px;background:#edf0f8;border-radius:999px;overflow:hidden;margin-top:6px}
-    .timer-bar span{display:block;height:100%;background:linear-gradient(90deg,#17a36b,#4c6fff);width:100%;transition:width 1s linear}
-    .question{font-size:24px;font-weight:900;line-height:1.45;margin-top:8px}
-    .answers{display:grid;gap:10px;margin-top:16px}
-    .answer{padding:15px 14px;border-radius:18px;border:1px solid var(--line);background:#fff;text-align:right;font-weight:800;color:#1b2435}
-    .answer:hover{box-shadow:0 8px 18px rgba(18,29,62,.07)}
-    .answer.locked{opacity:.65;pointer-events:none}
-    .answer.correct{background:#eefbf5;border-color:#bdebd4;color:#0d7d50}
-    .answer.wrong{background:#fff2f2;border-color:#f3c3c3;color:#b93b3b}
-    .announce{margin-top:14px;padding:13px 14px;border-radius:16px;background:#f7f9ff;border:1px solid var(--line);font-weight:800;text-align:center}
-    .announce.success{background:#effbf5;color:#0c8a58;border-color:#c3edd8}
-    .announce.info{background:#f5f7ff;color:#3850ad;border-color:#d5defd}
-    .results-line{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:10px}
-    .mini{padding:7px 10px;border-radius:999px;background:#f5f7fc;border:1px solid var(--line);font-size:12px;font-weight:800}
-    .foot-note{margin-top:12px;text-align:center;font-size:12px;color:var(--muted)}
-    .hidden{display:none !important}
-    @media (max-width:560px){
-      .title{font-size:26px}
-      .question{font-size:21px}
-      .scoreboard,.split{grid-template-columns:1fr}
-      .hud{grid-template-columns:1fr}
-      .status-right{justify-content:flex-start}
-    }
-  </style>
-</head>
-<body>
-  <div class="app">
-    <section id="screen-home" class="screen active">
-      <div class="card hero">
-        <div class="pill">טריוויה • 2 שחקנים • מירוץ</div>
-        <h1 class="title mt">מרוץ טריוויה זוגי</h1>
-        <p class="subtitle">כל שחקן מקבל את אותה שאלה עם 3 תשובות. כל תשובה נכונה מקדמת אתכם, והעונה המהיר מקבל בונוס. הראשון שמסיים את המסלול — מנצח את הסבב.</p>
-      </div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-      <div class="card mt-lg">
-        <div class="grid">
-          <div>
-            <label for="playerName">שם שחקן</label>
-            <input id="playerName" maxlength="18" placeholder="לדוגמה: גל" />
-          </div>
-          <div class="split">
-            <button id="createBtn" class="primary full">צור משחק חדש</button>
-            <button id="showJoinBtn" class="ghost full">הצטרף עם קוד / קישור</button>
-          </div>
-        </div>
-      </div>
+// 🔥 תדביק כאן את ה־config שלך מ-Firebase
+const firebaseConfig = {
+  apiKey: "PASTE_API_KEY",
+  authDomain: "PASTE_AUTH_DOMAIN",
+  databaseURL: "PASTE_DATABASE_URL",
+  projectId: "PASTE_PROJECT_ID",
+  storageBucket: "PASTE_STORAGE_BUCKET",
+  messagingSenderId: "PASTE_SENDER_ID",
+  appId: "PASTE_APP_ID"
+};
 
-      <div id="joinPanel" class="card mt hidden">
-        <div class="section-title">הצטרפות למשחק</div>
-        <div class="grid">
-          <div>
-            <label for="roomCode">קוד חדר</label>
-            <input id="roomCode" maxlength="10" placeholder="לדוגמה: 482917" />
-          </div>
-          <button id="joinBtn" class="secondary full">הצטרף לחדר</button>
-        </div>
-      </div>
-    </section>
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
-    <section id="screen-linkjoin" class="screen">
-      <div class="card center">
-        <div class="waiting-badge" style="width:74px;height:74px"></div>
-        <h2 class="section-title">הצטרפות לחדר</h2>
-        <p class="small mt">נכנסת מהזמנה. ממלאים שם ולוחצים על הכפתור — ואתה בפנים.</p>
+// ====== לוגיקה פשוטה למשחק ======
+let room = "";
+let player = "p_" + Math.random().toString(36).slice(2,7);
 
-        <div class="mt-lg row wrap" style="justify-content:center">
-          <div class="pill">קוד חדר: <strong id="deepLinkRoomCode"></strong></div>
-        </div>
+window.createRoom = function(){
+  room = Math.floor(100000 + Math.random()*900000).toString();
+  set(ref(db, "rooms/"+room), {
+    players: {[player]: true},
+    question: "כמה זה 2+2?",
+    answers: {}
+  });
+  startListen();
+  alert("קוד חדר: " + room);
+}
 
-        <div class="grid mt-lg" style="text-align:right">
-          <div>
-            <label for="linkJoinName">שם שחקן</label>
-            <input id="linkJoinName" maxlength="18" placeholder="לדוגמה: דוד" />
-          </div>
-          <button id="linkJoinBtn" class="primary full">הצטרף עכשיו לחדר</button>
-          <button id="backHomeBtn" class="ghost full">חזור למסך הראשי</button>
-        </div>
-      </div>
-    </section>
+window.joinRoom = function(){
+  room = document.getElementById("roomInput").value;
+  update(ref(db, "rooms/"+room+"/players"), {
+    [player]: true
+  });
+  startListen();
+}
 
-    <section id="screen-lobby" class="screen">
-      <div class="card center">
-        <div class="waiting-badge"></div>
-        <h2 class="section-title">ממתינים לחבר שיצטרף</h2>
-        <p class="small mt">שלח את ההזמנה בוואטסאפ או העתק את הקישור. ברגע שהשחקן השני ייכנס, המשחק יתחיל.</p>
+function startListen(){
+  document.getElementById("game").style.display="block";
+  onValue(ref(db, "rooms/"+room), (snap)=>{
+    const data = snap.val();
+    if(!data) return;
 
-        <div class="mt-lg row wrap" style="justify-content:center">
-          <div class="pill">קוד חדר: <strong id="lobbyCode"></strong></div>
-          <div class="pill">מסלול: 7 צעדים</div>
-          <div class="pill">זמן לכל שאלה: 12 שניות</div>
-        </div>
+    document.getElementById("question").innerText = data.question;
 
-        <div class="invite-box mt-lg" id="inviteBox"></div>
+    const answersDiv = document.getElementById("answers");
+    answersDiv.innerHTML = "";
 
-        <div class="split mt-lg">
-          <button id="waBtn" class="primary full">שלח הזמנה בוואטסאפ</button>
-          <button id="copyBtn" class="ghost full">העתק הזמנה</button>
-        </div>
-
-        <div class="foot-note">כשהאתר מאוחסן אונליין, הקישור יהיה לחיץ ויכניס ישר למשחק.</div>
-      </div>
-    </section>
-
-    <section id="screen-game" class="screen">
-      <div class="card hud">
-        <div>
-          <div class="section-title">חדר <span id="gameRoomCode"></span></div>
-          <div class="small" id="phaseText">מחכים להתחלה...</div>
-        </div>
-        <div class="status-right">
-          <div class="pill">סבב <span id="roundNum">1</span></div>
-          <div class="pill">שאלה <span id="questionNum">1</span></div>
-        </div>
-      </div>
-
-      <div class="scoreboard mt">
-        <div class="player-card">
-          <div class="player-top">
-            <div>
-              <div class="player-name" id="p1Name">שחקן 1</div>
-              <div class="wins">ניצחונות: <span id="p1Wins">0</span></div>
-            </div>
-            <div class="pill">מיקום: <span id="p1Pos">0</span>/7</div>
-          </div>
-          <div class="track" id="track1"></div>
-        </div>
-
-        <div class="player-card">
-          <div class="player-top">
-            <div>
-              <div class="player-name" id="p2Name">שחקן 2</div>
-              <div class="wins">ניצחונות: <span id="p2Wins">0</span></div>
-            </div>
-            <div class="pill">מיקום: <span id="p2Pos">0</span>/7</div>
-          </div>
-          <div class="track" id="track2"></div>
-        </div>
-      </div>
-
-      <div class="card question-card mt">
-        <div class="question-top">
-          <div class="q-index">ענה מהר ונכון כדי לקבל בונוס</div>
-          <div class="timer-wrap">
-            <div class="timer-num"><span id="timerNum">12</span> שנ׳</div>
-            <div class="timer-bar"><span id="timerFill"></span></div>
-          </div>
-        </div>
-
-        <div class="question" id="questionText">ממתינים לשאלה...</div>
-        <div class="answers" id="answersWrap"></div>
-
-        <div id="announce" class="announce info hidden"></div>
-        <div class="results-line hidden" id="roundInfoRow"></div>
-      </div>
-
-      <div class="row wrap mt" style="justify-content:center">
-        <button id="leaveBtn" class="danger">עזוב משחק</button>
-      </div>
-    </section>
-  </div>
-
-<script>
-(() => {
-  const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
-  const ROOMS = gun.get('hebrewTriviaDuelRooms_v2');
-  const QUESTIONS = [
-    {q:'מהי בירת ישראל?', a:['ירושלים','תל אביב','חיפה'], c:0},
-    {q:'כמה ימים יש בשבוע?', a:['5','6','7'], c:2},
-    {q:'איזה כוכב הוא הקרוב ביותר לכדור הארץ?', a:['הירח','השמש','מאדים'], c:1},
-    {q:'מה יוצא 3×4?', a:['12','7','14'], c:0},
-    {q:'מהו צבע השמיים ביום בהיר?', a:['כחול','סגול','חום'], c:0},
-    {q:'איזו עונה מגיעה אחרי הקיץ?', a:['חורף','אביב','סתיו'], c:2},
-    {q:'כמה אותיות יש במילה "ספר"?', a:['2','3','4'], c:1},
-    {q:'איזו חיה אומרת מיאו?', a:['כלב','חתול','סוס'], c:1},
-    {q:'מהו החודש הראשון בלוח הלועזי?', a:['ינואר','מרץ','דצמבר'], c:0},
-    {q:'כמה גלגלים יש לאופניים רגילים?', a:['1','2','4'], c:1},
-    {q:'מה שותים בדרך כלל מכוס?', a:['מים','אבן','חול'], c:0},
-    {q:'איזה כלי מראה שעה?', a:['שעון','מזלג','ספר'], c:0},
-    {q:'מהו ההפך מ"גדול"?', a:['רחב','קטן','מהיר'], c:1},
-    {q:'כמה חודשים יש בשנה?', a:['10','11','12'], c:2},
-    {q:'מהו 10 פחות 6?', a:['4','5','6'], c:0},
-    {q:'איזה צבע מקבלים מחיבור כחול וצהוב?', a:['ירוק','אדום','ורוד'], c:0},
-    {q:'מה צריך כדי לכתוב על דף?', a:['כפית','עט','מפתח'], c:1},
-    {q:'איזה ים נמצא במערב ישראל?', a:['ים המלח','הים התיכון','ים סוף'], c:1}
-  ];
-  const TRACK_LENGTH = 7;
-  const TURN_SECONDS = 12;
-
-  const $ = (id) => document.getElementById(id);
-  const screens = {
-    home: $('screen-home'), linkjoin: $('screen-linkjoin'), lobby: $('screen-lobby'), game: $('screen-game')
-  };
-
-  let state = null;
-  let roomCode = '';
-  let myPid = localStorage.getItem('trivia_pid') || ('p_' + Math.random().toString(36).slice(2,10));
-  localStorage.setItem('trivia_pid', myPid);
-  let myName = localStorage.getItem('trivia_name') || '';
-  let processedQuestionKey = '';
-  let localAnsweredQuestionKey = '';
-  let timerInterval = null;
-  let roomSub = null;
-  let answersSub = null;
-
-  $('playerName').value = myName;
-  if($('linkJoinName')) $('linkJoinName').value = myName;
-
-  function showScreen(name){
-    Object.values(screens).forEach(s => s.classList.remove('active'));
-    screens[name].classList.add('active');
-  }
-
-  function activeNameInput(){
-    return screens.linkjoin.classList.contains('active') ? $('linkJoinName') : $('playerName');
-  }
-
-  function saveName(){
-    const input = activeNameInput();
-    const typed = input ? input.value.trim() : '';
-    myName = typed || myName || 'שחקן';
-    $('playerName').value = myName;
-  if($('linkJoinName')) $('linkJoinName').value = myName;
-    if($('linkJoinName')) $('linkJoinName').value = myName;
-    localStorage.setItem('trivia_name', myName);
-    return myName;
-  }
-
-  function generateCode(){
-    return String(Math.floor(100000 + Math.random() * 900000));
-  }
-
-  function shuffleFromSeed(arr, seed){
-    const out = arr.slice();
-    let x = seed;
-    for(let i=out.length-1;i>0;i--){
-      x = (x * 9301 + 49297) % 233280;
-      const j = Math.floor((x / 233280) * (i + 1));
-      [out[i], out[j]] = [out[j], out[i]];
-    }
-    return out;
-  }
-
-  function baseUrl(){
-    const u = new URL(location.href);
-    u.search = '';
-    u.hash = '';
-    return u.toString();
-  }
-
-  function buildInviteText(code){
-    const url = baseUrl() + '?room=' + encodeURIComponent(code);
-    return `בוא למשחק טריוויה מולי!\nקוד חדר: ${code}\nקישור להצטרפות: ${url}`;
-  }
-
-  function setInviteUI(){
-    $('lobbyCode').textContent = roomCode;
-    const url = baseUrl() + '?room=' + encodeURIComponent(roomCode);
-    $('inviteBox').innerHTML = `קוד חדר: <strong>${roomCode}</strong><br>קישור לחיץ להצטרפות:<br><a href="${url}">${url}</a>`;
-  }
-
-  function createTrack(elId, position){
-    const el = $(elId);
-    el.innerHTML = '';
-    for(let i=1;i<=TRACK_LENGTH;i++){
-      const d = document.createElement('div');
-      d.className = 'step' + (i <= position ? ' on' : '') + (i === TRACK_LENGTH ? ' finish' : '');
-      el.appendChild(d);
-    }
-  }
-
-  function getPlayerIds(s){
-    return [s?.hostPid, s?.guestPid].filter(Boolean);
-  }
-
-  function myRole(s){
-    if(!s) return null;
-    if(s.hostPid === myPid) return 'host';
-    if(s.guestPid === myPid) return 'guest';
-    return null;
-  }
-
-  function otherPid(s){
-    if(!s) return null;
-    return s.hostPid === myPid ? s.guestPid : s.hostPid;
-  }
-
-  function updateHeader(){
-    $('gameRoomCode').textContent = roomCode;
-    $('roundNum').textContent = state?.round || 1;
-    $('questionNum').textContent = (state?.questionIndex || 0) + 1;
-    $('phaseText').textContent = state?.phase === 'waiting'
-      ? 'ממתינים לשחקן נוסף...'
-      : state?.phase === 'between-rounds'
-      ? 'סבב הסתיים. מכינים סבב חדש...'
-      : 'המשחק בעיצומו';
-  }
-
-  function updateScoreboard(){
-    const p1 = state?.hostName || 'שחקן 1';
-    const p2 = state?.guestName || 'שחקן 2';
-    $('p1Name').textContent = p1;
-    $('p2Name').textContent = p2;
-    $('p1Wins').textContent = state?.wins?.[state?.hostPid] || 0;
-    $('p2Wins').textContent = state?.wins?.[state?.guestPid] || 0;
-    $('p1Pos').textContent = state?.positions?.[state?.hostPid] || 0;
-    $('p2Pos').textContent = state?.positions?.[state?.guestPid] || 0;
-    createTrack('track1', state?.positions?.[state?.hostPid] || 0);
-    createTrack('track2', state?.positions?.[state?.guestPid] || 0);
-  }
-
-  function showAnnounce(text, type='info'){
-    const box = $('announce');
-    box.textContent = text;
-    box.className = 'announce ' + type;
-    box.classList.remove('hidden');
-  }
-
-  function hideAnnounce(){ $('announce').classList.add('hidden'); }
-
-  function setRoundInfo(items=[]){
-    const row = $('roundInfoRow');
-    row.innerHTML = '';
-    if(!items.length){ row.classList.add('hidden'); return; }
-    items.forEach(t => {
-      const d = document.createElement('div');
-      d.className = 'mini';
-      d.textContent = t;
-      row.appendChild(d);
-    });
-    row.classList.remove('hidden');
-  }
-
-  function renderQuestion(){
-    updateHeader();
-    updateScoreboard();
-    if(!state) return;
-    const q = QUESTIONS[state.questionOrder?.[state.questionIndex] ?? 0];
-    $('questionText').textContent = q ? q.q : 'טוען שאלה...';
-    const wrap = $('answersWrap');
-    wrap.innerHTML = '';
-    const myAns = state?.answers?.[state.questionKey]?.[myPid];
-    const locked = !!myAns || state.phase !== 'playing';
-    (q?.a || []).forEach((txt, idx) => {
-      const b = document.createElement('button');
-      b.className = 'answer' + (locked ? ' locked' : '');
-      b.textContent = txt;
-      if(myAns){
-        if(idx === myAns.choice && myAns.correct) b.classList.add('correct');
-        if(idx === myAns.choice && !myAns.correct) b.classList.add('wrong');
-      }
-      b.onclick = () => submitAnswer(idx);
-      wrap.appendChild(b);
-    });
-  }
-
-  function updateTimer(){
-    clearInterval(timerInterval);
-    if(!state?.questionStartedAt || state.phase !== 'playing'){
-      $('timerNum').textContent = TURN_SECONDS;
-      $('timerFill').style.width = '100%';
-      return;
-    }
-    const end = state.questionStartedAt + TURN_SECONDS*1000;
-    const tick = () => {
-      const left = Math.max(0, Math.ceil((end - Date.now())/1000));
-      const pct = Math.max(0, Math.min(100, ((end - Date.now())/(TURN_SECONDS*1000))*100));
-      $('timerNum').textContent = left;
-      $('timerFill').style.width = pct + '%';
-    };
-    tick();
-    timerInterval = setInterval(tick, 1000);
-  }
-
-  function writeRoom(obj){ ROOMS.get(roomCode).get('state').put(obj); }
-  function writeAnswer(qKey, pid, payload){ ROOMS.get(roomCode).get('answers').get(qKey).get(pid).put(payload); }
-
-  function setupListeners(){
-    if(roomSub) roomSub.off && roomSub.off();
-    if(answersSub) answersSub.off && answersSub.off();
-
-    roomSub = ROOMS.get(roomCode).get('state').on(data => {
-      if(!data || !data.hostPid) return;
-      state = normalizeState(data);
-      if(state.phase === 'waiting'){
-        setInviteUI();
-        showScreen(myRole(state) === 'host' ? 'lobby' : 'game');
-        if(myRole(state) === 'guest') showAnnounce('הצטרפת. ממתינים שהמשחק יתחיל...', 'info');
-      } else {
-        showScreen('game');
-      }
-      handleStateChange();
-    });
-
-    answersSub = ROOMS.get(roomCode).get('answers').map().on((node, qKey) => {
-      if(!qKey || !state) return;
-      if(!state.answers[qKey]) state.answers[qKey] = {};
-      ROOMS.get(roomCode).get('answers').get(qKey).map().on((ans, pid) => {
-        if(!pid || !ans || !ans.pid) return;
-        if(!state.answers[qKey]) state.answers[qKey] = {};
-        state.answers[qKey][pid] = ans;
-        if(qKey === state.questionKey) {
-          renderQuestion();
-          if(myRole(state) === 'host') maybeResolveQuestion();
-        }
-      });
-    });
-  }
-
-  function normalizeState(d){
-    return {
-      roomCode: d.roomCode,
-      hostPid: d.hostPid,
-      guestPid: d.guestPid || '',
-      hostName: d.hostName || 'שחקן 1',
-      guestName: d.guestName || 'שחקן 2',
-      phase: d.phase || 'waiting',
-      round: Number(d.round || 1),
-      questionIndex: Number(d.questionIndex || 0),
-      questionOrder: Array.isArray(d.questionOrder) ? d.questionOrder : Object.values(d.questionOrder || {}).filter(v => typeof v === 'number'),
-      questionKey: d.questionKey || '',
-      questionStartedAt: Number(d.questionStartedAt || 0),
-      positions: d.positions || {},
-      wins: d.wins || {},
-      lastResultText: d.lastResultText || '',
-      roundWinnerPid: d.roundWinnerPid || '',
-      answers: state?.answers || {}
-    };
-  }
-
-  function newRoundState(prev){
-    const seed = Number((roomCode + (prev?.round || 0)).replace(/\D/g,'')) || Date.now()%100000;
-    const order = shuffleFromSeed([...Array(QUESTIONS.length).keys()], seed);
-    const positions = {};
-    const wins = prev?.wins || {};
-    positions[prev.hostPid] = 0;
-    if(prev.guestPid) positions[prev.guestPid] = 0;
-    return {
-      roomCode,
-      hostPid: prev.hostPid,
-      guestPid: prev.guestPid,
-      hostName: prev.hostName,
-      guestName: prev.guestName,
-      phase: 'playing',
-      round: prev.round || 1,
-      questionIndex: 0,
-      questionOrder: order,
-      questionKey: 'r' + (prev.round || 1) + '_q0',
-      questionStartedAt: Date.now(),
-      positions,
-      wins,
-      lastResultText: '',
-      roundWinnerPid: ''
-    };
-  }
-
-  function createRoom(){
-    saveName();
-    roomCode = generateCode();
-    const init = {
-      roomCode,
-      hostPid: myPid,
-      guestPid: '',
-      hostName: myName,
-      guestName: '',
-      phase: 'waiting',
-      round: 1,
-      questionIndex: 0,
-      questionOrder: [],
-      questionKey: '',
-      questionStartedAt: 0,
-      positions: {[myPid]:0},
-      wins: {[myPid]:0},
-      lastResultText: '',
-      roundWinnerPid: ''
-    };
-    writeRoom(init);
-    setupListeners();
-    showScreen('lobby');
-    setInviteUI();
-  }
-
-  function joinRoom(code){
-    saveName();
-    roomCode = code.trim();
-    if(!roomCode) return alert('יש להזין קוד חדר');
-    ROOMS.get(roomCode).get('state').once(data => {
-      if(!data || !data.hostPid) return alert('החדר לא נמצא');
-      if(data.hostPid === myPid){
-        setupListeners();
-        showScreen(data.phase === 'waiting' ? 'lobby' : 'game');
-        return;
-      }
-      if(data.guestPid && data.guestPid !== myPid) return alert('החדר כבר מלא');
-      const patch = {
-        ...data,
-        guestPid: myPid,
-        guestName: myName,
+    ["3","4","5"].forEach((a,i)=>{
+      const btn = document.createElement("button");
+      btn.innerText = a;
+      btn.onclick = ()=>{
+        update(ref(db, "rooms/"+room+"/answers"), {
+          [player]: a
+        });
       };
-      if(!patch.wins) patch.wins = {};
-      patch.wins[patch.hostPid] = patch.wins[patch.hostPid] || 0;
-      patch.wins[patch.guestPid] = patch.wins[patch.guestPid] || 0;
-      writeRoom(patch);
-      setupListeners();
-      showScreen('game');
-      showAnnounce('נכנסת לחדר. ממתינים להתחלת המשחק...', 'info');
-      setTimeout(() => {
-        ROOMS.get(roomCode).get('state').once(latest => {
-          const s = normalizeState(latest);
-          if(s.hostPid === myPid) startIfReady();
-        });
-      }, 350);
+      answersDiv.appendChild(btn);
     });
-  }
 
-  function startIfReady(){
-    ROOMS.get(roomCode).get('state').once(data => {
-      const s = normalizeState(data);
-      if(s.hostPid !== myPid) return;
-      if(!s.guestPid) return;
-      if(s.phase === 'playing') return;
-      const next = newRoundState(s);
-      writeRoom(next);
-    });
-  }
-
-  function submitAnswer(choice){
-    if(!state || state.phase !== 'playing') return;
-    if(localAnsweredQuestionKey === state.questionKey) return;
-    const q = QUESTIONS[state.questionOrder[state.questionIndex]];
-    const payload = {
-      pid: myPid,
-      choice,
-      correct: choice === q.c,
-      answeredAt: Date.now(),
-      name: myName || 'שחקן'
-    };
-    localAnsweredQuestionKey = state.questionKey;
-    writeAnswer(state.questionKey, myPid, payload);
-    renderQuestion();
-    if(payload.correct) showAnnounce('תשובה נכונה! ממתינים ליריב או לטיימר...', 'success');
-    else showAnnounce('לא נכון. ממתינים לסיום השאלה...', 'info');
-  }
-
-  function maybeResolveQuestion(){
-    if(!state || myRole(state) !== 'host' || state.phase !== 'playing') return;
-    const ids = getPlayerIds(state);
-    const ansMap = state.answers[state.questionKey] || {};
-    const bothAnswered = ids.every(pid => !!ansMap[pid]);
-    const timerDone = Date.now() >= state.questionStartedAt + TURN_SECONDS*1000;
-    if(!bothAnswered && !timerDone) return;
-
-    const positions = {...state.positions};
-    const winners = [];
-    let fastest = null;
-    ids.forEach(pid => {
-      const a = ansMap[pid];
-      if(a?.correct){
-        positions[pid] = Math.min(TRACK_LENGTH, (positions[pid] || 0) + 1);
-        winners.push(pid);
-        if(!fastest || a.answeredAt < fastest.answeredAt) fastest = a;
-      }
-    });
-    if(fastest){
-      positions[fastest.pid] = Math.min(TRACK_LENGTH, (positions[fastest.pid] || 0) + 1);
-    }
-
-    const hostPos = positions[state.hostPid] || 0;
-    const guestPos = positions[state.guestPid] || 0;
-    const someoneWonRound = hostPos >= TRACK_LENGTH || guestPos >= TRACK_LENGTH;
-
-    if(someoneWonRound){
-      let roundWinnerPid = '';
-      if(hostPos > guestPos) roundWinnerPid = state.hostPid;
-      else if(guestPos > hostPos) roundWinnerPid = state.guestPid;
-      else roundWinnerPid = fastest?.pid || state.hostPid;
-      const wins = {...state.wins, [roundWinnerPid]: (state.wins[roundWinnerPid] || 0) + 1};
-      writeRoom({
-        ...state,
-        positions,
-        wins,
-        phase: 'between-rounds',
-        roundWinnerPid,
-        lastResultText: `${nameOf(roundWinnerPid)} ניצח בסבב! סבב חדש מתחיל...`
-      });
-      setTimeout(() => {
-        ROOMS.get(roomCode).get('state').once(data => {
-          const s = normalizeState(data);
-          if(s.hostPid !== myPid) return;
-          const next = newRoundState({ ...s, round: (s.round || 1) + 1 });
-          next.wins = s.wins;
-          writeRoom(next);
-        });
-      }, 2600);
-      return;
-    }
-
-    const nextIndex = state.questionIndex + 1;
-    const moreQuestions = nextIndex < state.questionOrder.length;
-    if(!moreQuestions){
-      const roundWinnerPid = hostPos >= guestPos ? state.hostPid : state.guestPid;
-      const wins = {...state.wins, [roundWinnerPid]: (state.wins[roundWinnerPid] || 0) + 1};
-      writeRoom({
-        ...state,
-        positions,
-        wins,
-        phase: 'between-rounds',
-        roundWinnerPid,
-        lastResultText: `${nameOf(roundWinnerPid)} ניצח בסבב לפי הניקוד!`
-      });
-      setTimeout(() => {
-        ROOMS.get(roomCode).get('state').once(data => {
-          const s = normalizeState(data);
-          if(s.hostPid !== myPid) return;
-          const next = newRoundState({ ...s, round: (s.round || 1) + 1 });
-          next.wins = s.wins;
-          writeRoom(next);
-        });
-      }, 2600);
-      return;
-    }
-
-    const lastResultText = buildResultText(ansMap, fastest?.pid);
-    writeRoom({
-      ...state,
-      positions,
-      phase: 'playing',
-      questionIndex: nextIndex,
-      questionKey: 'r' + state.round + '_q' + nextIndex,
-      questionStartedAt: Date.now() + 1700,
-      lastResultText
-    });
-  }
-
-  function buildResultText(ansMap, fastestPid){
-    const parts = [];
-    const hp = ansMap[state.hostPid];
-    const gp = ansMap[state.guestPid];
-    parts.push(`${state.hostName}: ${hp?.correct ? 'נכון' : 'לא נכון'}`);
-    parts.push(`${state.guestName}: ${gp?.correct ? 'נכון' : 'לא נכון'}`);
-    if(fastestPid) parts.push(`בונוס מהירות: ${nameOf(fastestPid)}`);
-    return parts.join(' • ');
-  }
-
-  function nameOf(pid){
-    if(pid === state?.hostPid) return state?.hostName || 'שחקן 1';
-    if(pid === state?.guestPid) return state?.guestName || 'שחקן 2';
-    return 'שחקן';
-  }
-
-  function handleStateChange(){
-    updateHeader();
-    updateScoreboard();
-    setInviteUI();
-
-    if(state.phase === 'waiting'){
-      if(myRole(state) === 'host') showScreen('lobby');
-      else showScreen('game');
-      if(myRole(state) === 'host' && state.guestPid){
-        showAnnounce('השחקן השני נכנס. מתחילים...', 'success');
-        startIfReady();
-      } else if(myRole(state) === 'host') {
-        hideAnnounce();
-      }
-      return;
-    }
-
-    renderQuestion();
-    updateTimer();
-
-    if(state.phase === 'between-rounds'){
-      showAnnounce(state.lastResultText || 'הסבב הסתיים', 'success');
-      const leader = leaderText();
-      setRoundInfo([leader, `סבב הבא מתחיל אוטומטית`]);
-      return;
-    }
-
-    setRoundInfo(state.lastResultText ? state.lastResultText.split(' • ') : []);
-
-    if(state.questionKey !== processedQuestionKey){
-      processedQuestionKey = state.questionKey;
-      localAnsweredQuestionKey = '';
-      hideAnnounce();
-      if(state.lastResultText) showAnnounce(state.lastResultText, 'info');
-    }
-
-    if(state.questionStartedAt > Date.now()){
-      showAnnounce('השאלה הבאה מתחילה בעוד רגע...', 'info');
-      setTimeout(() => {
-        if(state.phase === 'playing' && state.questionKey === processedQuestionKey) hideAnnounce();
-      }, Math.max(300, state.questionStartedAt - Date.now()));
-    }
-  }
-
-  function leaderText(){
-    const hw = state?.wins?.[state?.hostPid] || 0;
-    const gw = state?.wins?.[state?.guestPid] || 0;
-    if(hw === gw) return 'כרגע יש שוויון בניצחונות';
-    return hw > gw ? `${state.hostName} מוביל בניצחונות` : `${state.guestName} מוביל בניצחונות`;
-  }
-
-  function copyInvite(){
-    const text = buildInviteText(roomCode);
-    navigator.clipboard.writeText(text).then(() => {
-      alert('ההזמנה הועתקה');
-    });
-  }
-
-  function sendWhatsApp(){
-    const text = buildInviteText(roomCode);
-    window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
-  }
-
-  function leaveGame(){
-    if(!roomCode) return location.reload();
-    const role = myRole(state);
-    if(role === 'host'){
-      writeRoom({
-        ...state,
-        phase:'waiting',
-        guestPid:'',
-        guestName:'',
-        questionKey:'',
-        questionStartedAt:0,
-        questionOrder:[],
-        positions:{[state.hostPid]:0},
-        lastResultText:''
-      });
-    } else if(role === 'guest'){
-      writeRoom({
-        ...state,
-        phase:'waiting',
-        guestPid:'',
-        guestName:'',
-        questionKey:'',
-        questionStartedAt:0,
-        questionOrder:[],
-        positions:{[state.hostPid]:0},
-        lastResultText:''
-      });
-    }
-    setTimeout(() => location.href = baseUrl(), 200);
-  }
-
-  $('createBtn').onclick = createRoom;
-  $('showJoinBtn').onclick = () => $('joinPanel').classList.toggle('hidden');
-  $('joinBtn').onclick = () => joinRoom($('roomCode').value);
-  $('copyBtn').onclick = copyInvite;
-  $('waBtn').onclick = sendWhatsApp;
-  $('leaveBtn').onclick = leaveGame;
-  $('linkJoinBtn').onclick = () => joinRoom($('deepLinkRoomCode').textContent || $('roomCode').value);
-  $('backHomeBtn').onclick = () => { history.replaceState({}, '', baseUrl()); showScreen('home'); };
-
-  const qp = new URLSearchParams(location.search);
-  const preRoom = qp.get('room');
-  if(preRoom){
-    $('roomCode').value = preRoom;
-    $('deepLinkRoomCode').textContent = preRoom;
-    $('linkJoinName').value = myName;
-    showScreen('linkjoin');
-  }
-
-  createTrack('track1', 0);
-  createTrack('track2', 0);
-})();
+    document.getElementById("status").innerText =
+      JSON.stringify(data.answers);
+  });
+}
 </script>
+
+</head>
+<body style="font-family:Arial;text-align:center">
+
+<h2>משחק טריוויה Firebase</h2>
+
+<button onclick="createRoom()">צור משחק</button>
+<br><br>
+
+<input id="roomInput" placeholder="קוד חדר">
+<button onclick="joinRoom()">הצטרף</button>
+
+<div id="game" style="display:none;margin-top:20px">
+  <h3 id="question"></h3>
+  <div id="answers"></div>
+  <p id="status"></p>
+</div>
+
 </body>
 </html>
