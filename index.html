@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>מרוץ טריוויה - 2 שחקנים</title>
+  <title>מרוץ טריוויה זוגי - גרסת מירוץ</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
   <style>
     :root{
       --bg:#f5f7fb;
@@ -16,7 +18,7 @@
       --good:#1e9c5e;
       --bad:#d94c4c;
       --soft:#eef3ff;
-      --shadow:0 18px 45px rgba(25, 39, 74, 0.08);
+      --shadow:0 18px 45px rgba(25,39,74,.08);
       --radius:22px;
     }
     *{box-sizing:border-box}
@@ -27,13 +29,13 @@
       color:var(--text);
       min-height:100vh;
     }
-    .wrap{max-width:760px;margin:0 auto;padding:18px 14px 40px}
+    .wrap{max-width:820px;margin:0 auto;padding:18px 14px 40px}
     .app-title{
       text-align:center;
       font-size:clamp(28px,5vw,40px);
       font-weight:800;
       margin:14px 0 8px;
-      letter-spacing:-0.02em;
+      letter-spacing:-.02em;
     }
     .subtitle{text-align:center;color:var(--muted);margin:0 0 20px;font-size:15px}
     .card{
@@ -45,20 +47,27 @@
       margin-bottom:14px;
     }
     .hidden{display:none !important}
-    h2,h3,p{margin:0}
+    h1,h2,h3,p{margin:0}
     .section-title{font-size:21px;font-weight:800;margin-bottom:8px}
-    .section-sub{color:var(--muted);font-size:14px;line-height:1.5;margin-bottom:16px}
-    input,button{
-      font:inherit;
-    }
+    .section-sub{color:var(--muted);font-size:14px;line-height:1.6;margin-bottom:16px}
+    input,button{font:inherit}
     input{
-      width:100%;padding:15px 16px;border-radius:16px;border:1px solid var(--line);background:#fff;color:var(--text);
+      width:100%;
+      padding:15px 16px;
+      border-radius:16px;
+      border:1px solid var(--line);
+      background:#fff;
+      color:var(--text);
       outline:none;
     }
     input:focus{border-color:#b8c8ff;box-shadow:0 0 0 4px rgba(58,111,247,.10)}
-    .btns{display:grid;gap:10px}
     .btn{
-      border:none;border-radius:16px;padding:15px 16px;font-weight:800;cursor:pointer;transition:.18s transform,.18s opacity,.18s background;
+      border:none;
+      border-radius:16px;
+      padding:15px 16px;
+      font-weight:800;
+      cursor:pointer;
+      transition:.18s transform,.18s opacity,.18s background;
     }
     .btn:active{transform:scale(.985)}
     .btn-primary{background:var(--primary);color:#fff}
@@ -68,40 +77,66 @@
     .btn-good{background:var(--good);color:#fff}
     .inline{display:flex;gap:10px;flex-wrap:wrap}
     .inline > *{flex:1 1 180px}
-    .pill{display:inline-flex;align-items:center;gap:8px;background:var(--soft);color:var(--primary);padding:10px 14px;border-radius:999px;font-weight:800;font-size:13px}
-    .code-box,.link-box{
-      margin-top:12px;background:#f8faff;border:1px dashed #ccd7fa;padding:14px;border-radius:16px;word-break:break-all
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      background:var(--soft);
+      color:var(--primary);
+      padding:10px 14px;
+      border-radius:999px;
+      font-weight:800;
+      font-size:13px;
+    }
+    .code-box,.link-box,.info-box{
+      margin-top:12px;
+      background:#f8faff;
+      border:1px dashed #ccd7fa;
+      padding:14px;
+      border-radius:16px;
+      word-break:break-all;
     }
     .big-code{font-size:26px;font-weight:900;letter-spacing:.12em;text-align:center}
     .players{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px}
     .player-card{background:#f8faff;border:1px solid var(--line);border-radius:18px;padding:14px}
     .player-name{font-weight:800;font-size:16px;margin-bottom:8px}
-    .player-meta{color:var(--muted);font-size:13px}
+    .player-meta{color:var(--muted);font-size:13px;line-height:1.6}
     .player-status{margin-top:10px;font-size:13px;font-weight:800}
     .status-on{color:var(--good)}
     .status-off{color:var(--muted)}
-    .top-game{display:grid;gap:12px}
     .score-row{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center}
     .mini-card{background:#f8faff;border:1px solid var(--line);border-radius:18px;padding:12px}
     .mini-name{font-weight:800;font-size:15px;margin-bottom:8px}
-    .mini-score{font-size:13px;color:var(--muted);line-height:1.6}
+    .mini-score{font-size:13px;color:var(--muted);line-height:1.7}
     .center-box{text-align:center}
     .timer-ring{
-      width:92px;height:92px;border-radius:50%;margin:0 auto 6px;background:conic-gradient(var(--primary) 100%, #e6ecff 0);
+      width:92px;height:92px;border-radius:50%;
+      margin:0 auto 6px;
+      background:conic-gradient(var(--primary) 100%, #e6ecff 0);
       display:grid;place-items:center;
     }
-    .timer-inner{width:74px;height:74px;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:26px;font-weight:900}
-    .track-wrap{display:grid;grid-template-columns:1fr;gap:10px;margin-top:4px}
+    .timer-inner{
+      width:74px;height:74px;border-radius:50%;
+      background:#fff;display:grid;place-items:center;
+      font-size:26px;font-weight:900;
+    }
+    .track-wrap{display:grid;grid-template-columns:1fr;gap:10px;margin-top:14px}
     .track-title{font-weight:800;margin-bottom:8px}
     .track{
-      background:#f8faff;border:1px solid var(--line);border-radius:999px;padding:10px;position:relative;overflow:hidden
+      background:#f8faff;
+      border:1px solid var(--line);
+      border-radius:999px;
+      padding:10px;
+      position:relative;
+      overflow:hidden;
     }
-    .track-line{
-      height:16px;border-radius:999px;background:linear-gradient(90deg,#edf2ff 0%,#eff7f4 100%);position:relative
-    }
+    .track-line{height:16px;border-radius:999px;background:linear-gradient(90deg,#edf2ff 0%,#eff7f4 100%)}
     .runner{
-      width:28px;height:28px;border-radius:50%;position:absolute;top:50%;transform:translate(-50%,-50%);
-      display:grid;place-items:center;font-size:15px;font-weight:900;background:#fff;border:2px solid var(--primary);box-shadow:0 8px 18px rgba(58,111,247,.18);
+      width:28px;height:28px;border-radius:50%;
+      position:absolute;top:50%;transform:translate(-50%,-50%);
+      display:grid;place-items:center;font-size:15px;font-weight:900;
+      background:#fff;border:2px solid var(--primary);
+      box-shadow:0 8px 18px rgba(58,111,247,.18);
       transition:left .35s ease;
     }
     .runner.opponent{border-color:var(--good);box-shadow:0 8px 18px rgba(30,156,94,.18)}
@@ -111,16 +146,19 @@
     .question-text{font-size:24px;font-weight:900;line-height:1.4;margin-bottom:14px}
     .answers{display:grid;gap:10px}
     .answer{
-      text-align:right;padding:15px 16px;border-radius:18px;border:1px solid var(--line);background:#fff;cursor:pointer;font-weight:700;
-      transition:.18s transform,.18s background,.18s border-color;
+      text-align:right;padding:15px 16px;border-radius:18px;border:1px solid var(--line);
+      background:#fff;cursor:pointer;font-weight:700;transition:.18s transform,.18s background,.18s border-color;
     }
     .answer:hover{transform:translateY(-1px);border-color:#c7d5ff}
     .answer.correct{background:#effaf4;border-color:#c7ecd8;color:#13663d}
     .answer.wrong{background:#fff1f1;border-color:#f0c9c9;color:#9f2d2d}
-    .answer.locked{pointer-events:none;opacity:.8}
-    .notice{margin-top:12px;padding:12px 14px;border-radius:15px;background:#f8faff;border:1px solid var(--line);font-size:14px;color:var(--muted)}
+    .answer.locked{pointer-events:none;opacity:.82}
+    .notice{
+      margin-top:12px;padding:12px 14px;border-radius:15px;background:#f8faff;border:1px solid var(--line);
+      font-size:14px;color:var(--muted);line-height:1.6;
+    }
     .result-title{text-align:center;font-size:28px;font-weight:900;margin-bottom:10px}
-    .result-sub{text-align:center;color:var(--muted);line-height:1.6;margin-bottom:18px}
+    .result-sub{text-align:center;color:var(--muted);line-height:1.7;margin-bottom:18px}
     .wins-box{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
     .setup-overlay{position:fixed;inset:0;background:rgba(16,22,38,.58);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50}
     .setup-box{max-width:720px;background:#fff;border-radius:24px;padding:22px;border:1px solid var(--line);box-shadow:var(--shadow)}
@@ -128,8 +166,7 @@
     .setup-box p{color:var(--muted);line-height:1.7;margin-bottom:10px}
     .setup-box code{background:#f3f6ff;padding:2px 6px;border-radius:8px}
     .steps{margin:12px 0 0;padding-right:18px;color:var(--text);line-height:1.9}
-    .countdown{font-size:42px;font-weight:900;text-align:center;margin:6px 0}
-    .muted{text-align:center;color:var(--muted)}
+    .tiny{font-size:12px;color:var(--muted)}
     @media (max-width:560px){
       .question-text{font-size:21px}
       .score-row{grid-template-columns:1fr}
@@ -143,14 +180,12 @@
 <body>
   <div class="wrap">
     <div class="app-title">מרוץ טריוויה</div>
-    <p class="subtitle">משחק תחרותי פשוט ל־2 שחקנים. נכנסים, מזמינים, ומתחילים.</p>
+    <p class="subtitle">גרסת מירוץ: כל שחקן מתקדם עצמאית. ענית נכון? אתה מתקדם צעד. לא נכון? נשאר במקום ועובר לשאלה הבאה.</p>
 
     <section id="screen-home" class="card">
       <h2 class="section-title">כניסה למשחק</h2>
       <p class="section-sub">כתוב שם, צור חדר חדש או הצטרף עם קוד/קישור.</p>
-      <div class="btns">
-        <input id="playerName" type="text" maxlength="20" placeholder="השם שלך" />
-      </div>
+      <input id="playerName" type="text" maxlength="20" placeholder="השם שלך" />
       <div class="inline" style="margin-top:12px">
         <button class="btn btn-primary" id="createRoomBtn">צור משחק חדש</button>
         <button class="btn btn-secondary" id="showJoinBtn">יש לי קוד חדר</button>
@@ -164,7 +199,7 @@
     <section id="screen-invite" class="card hidden">
       <div class="pill">נוצר חדר חדש</div>
       <h2 class="section-title" style="margin-top:12px">שלח הזמנה לחבר</h2>
-      <p class="section-sub">שלח את הקישור או את קוד החדר. אתה נשאר כאן ומחכה עד שהשחקן השני ייכנס.</p>
+      <p class="section-sub">המארח יוצר חדר, השחקן השני מצטרף, ומאותו רגע כל אחד מתקדם עצמאית במסלול שלו.</p>
       <div class="code-box">
         <div style="font-size:13px;color:var(--muted);margin-bottom:6px">קוד חדר</div>
         <div id="roomCodeLabel" class="big-code">------</div>
@@ -175,7 +210,7 @@
       </div>
       <div class="inline" style="margin-top:12px">
         <button class="btn btn-primary" id="whatsappBtn">שלח בוואטסאפ</button>
-        <button class="btn btn-secondary" id="copyInviteBtn">העתק קישור</button>
+        <button class="btn btn-secondary" id="copyInviteBtn">העתק הזמנה</button>
       </div>
       <div class="players">
         <div class="player-card">
@@ -189,12 +224,13 @@
           <div class="player-status status-off" id="guestWaitStatus">עדיין לא נכנס</div>
         </div>
       </div>
+      <div class="info-box tiny">אין מעבר משותף בין שאלות. כל שחקן עובר לשאלה הבאה מיד אחרי שהוא עונה.</div>
     </section>
 
     <section id="screen-join-link" class="card hidden">
       <div class="pill">הוזמנת לחדר</div>
       <h2 class="section-title" style="margin-top:12px">הצטרפות לחדר</h2>
-      <p class="section-sub">הגעת מקישור הזמנה. כתוב שם ולחץ על הכפתור כדי להצטרף מיד.</p>
+      <p class="section-sub">הגעת מקישור הזמנה. כתוב שם ולחץ על הכפתור כדי להיכנס.</p>
       <div class="code-box">
         <div style="font-size:13px;color:var(--muted);margin-bottom:6px">קוד חדר</div>
         <div id="autoJoinRoomCode" class="big-code">------</div>
@@ -203,67 +239,54 @@
       <button class="btn btn-primary" id="joinFromLinkBtn" style="margin-top:12px;width:100%">הצטרף עכשיו לחדר</button>
     </section>
 
-    <section id="screen-wait-start" class="card hidden">
-      <h2 class="section-title">שני השחקנים בפנים</h2>
-      <p class="section-sub">מיד מתחילים. ברגע שהמשחק מתחיל, כל אחד יקבל את אותה שאלה באותו זמן.</p>
-      <div class="players">
-        <div class="player-card">
-          <div class="player-name" id="waitP1">שחקן 1</div>
-          <div class="player-meta">מוכן</div>
-          <div class="player-status status-on">מחובר</div>
+    <section id="screen-game" class="card hidden">
+      <div class="score-row">
+        <div class="mini-card">
+          <div class="mini-name" id="meNameTop">אני</div>
+          <div class="mini-score">
+            ניצחונות: <span id="meWinsTop">0</span><br>
+            התקדמות: <span id="meProgressTop">0</span>/10<br>
+            שאלה: <span id="meQuestionTop">1</span>
+          </div>
         </div>
-        <div class="player-card">
-          <div class="player-name" id="waitP2">שחקן 2</div>
-          <div class="player-meta">מוכן</div>
-          <div class="player-status status-on">מחובר</div>
+        <div class="center-box">
+          <div class="timer-ring" id="timerRing"><div class="timer-inner" id="timerText">12</div></div>
+          <div class="pill" id="roundBadge">סבב 1</div>
+        </div>
+        <div class="mini-card">
+          <div class="mini-name" id="opponentNameTop">יריב</div>
+          <div class="mini-score">
+            ניצחונות: <span id="opWinsTop">0</span><br>
+            התקדמות: <span id="opProgressTop">0</span>/10<br>
+            שאלה: <span id="opQuestionTop">1</span>
+          </div>
         </div>
       </div>
-      <div class="countdown" id="countdownText">3</div>
-      <div class="muted">המשחק מתחיל…</div>
-    </section>
 
-    <section id="screen-game" class="card hidden">
-      <div class="top-game">
-        <div class="score-row">
-          <div class="mini-card">
-            <div class="mini-name" id="meNameTop">אני</div>
-            <div class="mini-score">ניצחונות: <span id="meWinsTop">0</span><br>התקדמות: <span id="meProgressTop">0</span>/10</div>
-          </div>
-          <div class="center-box">
-            <div class="timer-ring" id="timerRing"><div class="timer-inner" id="timerText">12</div></div>
-            <div class="pill" id="roundBadge">סבב 1</div>
-          </div>
-          <div class="mini-card">
-            <div class="mini-name" id="opponentNameTop">יריב</div>
-            <div class="mini-score">ניצחונות: <span id="opWinsTop">0</span><br>התקדמות: <span id="opProgressTop">0</span>/10</div>
+      <div class="track-wrap">
+        <div>
+          <div class="track-title" id="myTrackTitle">אני</div>
+          <div class="track">
+            <div class="track-line"></div>
+            <div class="finish">🏁</div>
+            <div class="runner" id="myRunner" style="left:0%">א</div>
           </div>
         </div>
-
-        <div class="track-wrap">
-          <div>
-            <div class="track-title" id="myTrackTitle">אני</div>
-            <div class="track">
-              <div class="track-line"></div>
-              <div class="finish">🏁</div>
-              <div class="runner" id="myRunner" style="left:0%">א</div>
-            </div>
-          </div>
-          <div>
-            <div class="track-title" id="opTrackTitle">יריב</div>
-            <div class="track">
-              <div class="track-line"></div>
-              <div class="finish">🏁</div>
-              <div class="runner opponent" id="opRunner" style="left:0%">ב</div>
-            </div>
+        <div>
+          <div class="track-title" id="opTrackTitle">יריב</div>
+          <div class="track">
+            <div class="track-line"></div>
+            <div class="finish">🏁</div>
+            <div class="runner opponent" id="opRunner" style="left:0%">ב</div>
           </div>
         </div>
       </div>
 
       <div class="question-box">
         <div class="question-index" id="questionIndex">שאלה 1</div>
-        <div class="question-text" id="questionText">טוען שאלה…</div>
+        <div class="question-text" id="questionText">ממתינים לשאלה…</div>
         <div class="answers" id="answersBox"></div>
-        <div class="notice" id="noticeBox">הראשון שעונה נכון מקבל צעד נוסף.</div>
+        <div class="notice" id="noticeBox">ענה נכון ותתקדם צעד. אם טעית, נשארים במקום ועוברים לשאלה הבאה.</div>
       </div>
     </section>
 
@@ -288,21 +311,16 @@
   <div id="setupOverlay" class="setup-overlay hidden">
     <div class="setup-box">
       <h3>צריך לחבר Firebase פעם אחת</h3>
-      <p>הקובץ כבר כמעט מוכן. הכנסתי לך את רוב פרטי הפרויקט, ונשאר רק למלא את <code>databaseURL</code> בתוך <code>FIREBASE_CONFIG</code>.</p>
-      <p>אחרי שממלאים את ההגדרות ומעלים את הקובץ ל־Firebase Hosting / Netlify / GitHub Pages, ההזמנה בוואטסאפ תהיה לחיצה אחת ותעבוד נכון.</p>
+      <p>הקובץ כמעט מוכן. אם משהו לא עובד, בדוק במיוחד את <code>databaseURL</code> בתוך <code>FIREBASE_CONFIG</code>.</p>
       <ol class="steps">
-        <li>פתח Firebase Console וצור פרויקט חדש.</li>
         <li>הפעל Realtime Database במצב test.</li>
-        <li>הוסף Web App והעתק את כתובת ה־Realtime Database.</li>
-        <li>חפש בקובץ את <code>PASTE_YOUR_DATABASE_URL</code> והדבק שם את הכתובת האמיתית.</li>
-        <li>אחסן את הקובץ אונליין ופתח את הכתובת משם, כדי שהקישור בוואטסאפ יהיה לחיץ.</li>
+        <li>ודא ש־<code>databaseURL</code> תקין ובשורה אחת.</li>
+        <li>כדי שקישור הזמנה יהיה לחיץ, אחסן את הקובץ אונליין.</li>
       </ol>
       <button class="btn btn-primary" id="closeSetupBtn" style="width:100%;margin-top:14px">הבנתי</button>
     </div>
   </div>
 
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
   <script>
     const FIREBASE_CONFIG = {
       apiKey: "AIzaSyCBa0XIboAWJIeiH6Wqer74sSiMyRKfK2s",
@@ -326,16 +344,19 @@
       {q:"איזו יבשת היא הגדולה ביותר?", a:["אירופה","אסיה","אפריקה"], c:1},
       {q:"כמה דקות יש בשעה?", a:["60","30","90"], c:0},
       {q:"איזה מכשיר מציג זמן?", a:["שעון","מקרר","מחברת"], c:0},
-      {q:"איזו עונה באה אחרי האביב?", a:["חורף","קיץ","סתיו"], c:1}
+      {q:"איזו עונה באה אחרי האביב?", a:["חורף","קיץ","סתיו"], c:1},
+      {q:"מהו 9 פחות 4?", a:["5","6","7"], c:0},
+      {q:"איזה צבע יש לעשב בדרך כלל?", a:["ירוק","כתום","שחור"], c:0},
+      {q:"כמה גלגלים יש לאופניים רגילים?", a:["1","2","3"], c:1}
     ];
 
     const FINISH_STEPS = 10;
     const QUESTION_TIME = 12;
+
     const screens = {
       home: document.getElementById('screen-home'),
       invite: document.getElementById('screen-invite'),
       joinLink: document.getElementById('screen-join-link'),
-      waitStart: document.getElementById('screen-wait-start'),
       game: document.getElementById('screen-game'),
       result: document.getElementById('screen-result')
     };
@@ -357,15 +378,14 @@
       autoJoinRoomCode: document.getElementById('autoJoinRoomCode'),
       playerNameJoinLink: document.getElementById('playerNameJoinLink'),
       joinFromLinkBtn: document.getElementById('joinFromLinkBtn'),
-      waitP1: document.getElementById('waitP1'),
-      waitP2: document.getElementById('waitP2'),
-      countdownText: document.getElementById('countdownText'),
       meNameTop: document.getElementById('meNameTop'),
       meWinsTop: document.getElementById('meWinsTop'),
       meProgressTop: document.getElementById('meProgressTop'),
+      meQuestionTop: document.getElementById('meQuestionTop'),
       opponentNameTop: document.getElementById('opponentNameTop'),
       opWinsTop: document.getElementById('opWinsTop'),
       opProgressTop: document.getElementById('opProgressTop'),
+      opQuestionTop: document.getElementById('opQuestionTop'),
       roundBadge: document.getElementById('roundBadge'),
       myRunner: document.getElementById('myRunner'),
       opRunner: document.getElementById('opRunner'),
@@ -390,25 +410,20 @@
     };
 
     let app, db, roomsRef;
-    let roomCode = null;
-    let playerId = localStorage.getItem('trivia_player_id') || crypto.randomUUID();
-    localStorage.setItem('trivia_player_id', playerId);
-    let myName = localStorage.getItem('trivia_player_name') || '';
+    let roomCode = '';
+    let playerId = localStorage.getItem('trivia_race_player_id') || crypto.randomUUID();
+    let myName = localStorage.getItem('trivia_race_player_name') || '';
     let isHost = false;
     let roomListener = null;
     let roomState = null;
-    let countdownInterval = null;
     let timerInterval = null;
-    let hostAdvanceTimeout = null;
-    let currentQuestionKey = null;
+    let questionTimeout = null;
+    let currentRenderedQuestionIndex = -1;
+
+    localStorage.setItem('trivia_race_player_id', playerId);
 
     function isFirebaseConfigured() {
-      return !!(
-        FIREBASE_CONFIG.apiKey &&
-        !FIREBASE_CONFIG.apiKey.includes('PASTE_YOUR') &&
-        FIREBASE_CONFIG.databaseURL &&
-        !FIREBASE_CONFIG.databaseURL.includes('PASTE_YOUR')
-      );
+      return !!(FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.databaseURL);
     }
 
     function initFirebase() {
@@ -419,11 +434,11 @@
       try {
         app = firebase.initializeApp(FIREBASE_CONFIG);
         db = firebase.database();
-        roomsRef = db.ref('trivia_rooms');
+        roomsRef = db.ref('trivia_race_rooms_v1');
         return true;
       } catch (e) {
         console.error(e);
-        alert('יש שגיאה בהגדרות Firebase. בדוק במיוחד את databaseURL.');
+        alert('יש שגיאה בהגדרות Firebase.');
         els.setupOverlay.classList.remove('hidden');
         return false;
       }
@@ -438,13 +453,9 @@
       return (name || '').trim().replace(/\s+/g, ' ').slice(0, 20);
     }
 
-    function getEnteredName() {
-      return sanitizeName(els.playerName.value || els.playerNameJoinLink.value || myName);
-    }
-
     function setNameEverywhere(name) {
       myName = sanitizeName(name);
-      localStorage.setItem('trivia_player_name', myName);
+      localStorage.setItem('trivia_race_player_name', myName);
       els.playerName.value = myName;
       els.playerNameJoinLink.value = myName;
     }
@@ -460,13 +471,11 @@
       return url.toString();
     }
 
-    function pickQuestions(count=7) {
-      const shuffled = [...QUESTIONS].sort(() => Math.random() - 0.5);
-      return shuffled.slice(0, count);
-    }
-
-    function playerEntries(room) {
-      return Object.entries(room.players || {});
+    function buildInviteText(code) {
+      const link = inviteUrl(code);
+      return link
+        ? `בוא למשחק טריוויה מולי\nהצטרף כאן: ${link}\nקוד חדר: ${code}`
+        : `בוא למשחק טריוויה מולי\nקוד חדר: ${code}`;
     }
 
     function myPlayer(room) {
@@ -474,23 +483,79 @@
     }
 
     function otherPlayer(room) {
-      const entries = playerEntries(room).filter(([id]) => id !== playerId);
-      return entries[0] ? { id: entries[0][0], ...entries[0][1] } : null;
+      const players = Object.entries(room?.players || {}).filter(([id]) => id !== playerId);
+      return players[0] ? { id: players[0][0], ...players[0][1] } : null;
+    }
+
+    function roomPlayersCount(room) {
+      return Object.keys(room?.players || {}).length;
+    }
+
+    function getQuestionForPlayer(player) {
+      const idx = player?.questionIndex || 0;
+      return QUESTIONS[idx] || null;
+    }
+
+    function moveRunner(el, progress) {
+      const percent = Math.max(0, Math.min(100, (progress / FINISH_STEPS) * 100));
+      el.style.left = `calc(${percent}% + ${percent === 100 ? -8 : 0}px)`;
+    }
+
+    function clearQuestionTimer() {
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = null;
+      if (questionTimeout) clearTimeout(questionTimeout);
+      questionTimeout = null;
+    }
+
+    function runTimer() {
+      clearQuestionTimer();
+
+      const me = myPlayer(roomState);
+      if (!me || roomState?.status !== 'playing') return;
+
+      const startedAt = me.questionStartedAt || Date.now();
+      const finishAt = startedAt + QUESTION_TIME * 1000;
+
+      const tick = () => {
+        const leftMs = Math.max(0, finishAt - Date.now());
+        const seconds = Math.ceil(leftMs / 1000);
+        const pct = Math.max(0, Math.min(100, (leftMs / (QUESTION_TIME * 1000)) * 100));
+        els.timerText.textContent = seconds;
+        els.timerRing.style.background = `conic-gradient(var(--primary) ${pct}%, #e6ecff ${pct}% 100%)`;
+      };
+
+      tick();
+      timerInterval = setInterval(tick, 120);
+
+      questionTimeout = setTimeout(() => {
+        forceAdvanceOnTimeout();
+      }, Math.max(0, finishAt - Date.now() + 30));
+    }
+
+    async function forceAdvanceOnTimeout() {
+      if (!roomState || roomState.status !== 'playing') return;
+      const me = myPlayer(roomState);
+      if (!me) return;
+      if (me.lastAnsweredQuestionIndex === me.questionIndex) return;
+      await advanceMyQuestion(false, true);
     }
 
     async function createRoom() {
       const name = sanitizeName(els.playerName.value);
       if (!name) return alert('כתוב שם קודם');
       setNameEverywhere(name);
+
       roomCode = generateRoomCode();
       isHost = true;
+
       const roomData = {
         code: roomCode,
         createdAt: Date.now(),
         status: 'waiting',
         hostId: playerId,
-        countdownStartAt: null,
         round: 1,
+        winnerId: '',
         players: {
           [playerId]: {
             id: playerId,
@@ -498,11 +563,15 @@
             joinedAt: Date.now(),
             online: true,
             wins: 0,
-            progress: 0
+            progress: 0,
+            questionIndex: 0,
+            questionStartedAt: 0,
+            lastAnsweredQuestionIndex: -1,
+            finishedAt: 0
           }
-        },
-        game: null
+        }
       };
+
       await roomsRef.child(roomCode).set(roomData);
       listenRoom(roomCode);
       renderInvite(roomData);
@@ -512,85 +581,106 @@
     async function joinRoomByCode(code, name) {
       const cleanCode = (code || '').trim().toUpperCase();
       const cleanName = sanitizeName(name);
+
       if (!cleanName) return alert('כתוב שם קודם');
       if (!cleanCode) return alert('הכנס קוד חדר');
+
       setNameEverywhere(cleanName);
       roomCode = cleanCode;
-      const roomSnap = await roomsRef.child(roomCode).get();
-      if (!roomSnap.exists()) return alert('החדר לא נמצא');
-      const room = roomSnap.val();
-      const existingPlayers = playerEntries(room);
+
+      const snap = await roomsRef.child(roomCode).get();
+      if (!snap.exists()) return alert('החדר לא נמצא');
+
+      const room = snap.val();
+      const playersCount = roomPlayersCount(room);
       const alreadyInside = !!room.players?.[playerId];
-      if (existingPlayers.length >= 2 && !alreadyInside) return alert('החדר כבר מלא');
+      if (playersCount >= 2 && !alreadyInside) return alert('החדר כבר מלא');
+
       isHost = room.hostId === playerId;
+
       await roomsRef.child(roomCode).child('players').child(playerId).update({
         id: playerId,
         name: cleanName,
         joinedAt: Date.now(),
         online: true,
         wins: room.players?.[playerId]?.wins || 0,
-        progress: room.players?.[playerId]?.progress || 0
+        progress: room.players?.[playerId]?.progress || 0,
+        questionIndex: room.players?.[playerId]?.questionIndex || 0,
+        questionStartedAt: room.players?.[playerId]?.questionStartedAt || 0,
+        lastAnsweredQuestionIndex: room.players?.[playerId]?.lastAnsweredQuestionIndex ?? -1,
+        finishedAt: room.players?.[playerId]?.finishedAt || 0
       });
+
+      if (room.status === 'waiting' && roomPlayersCount(room) + (alreadyInside ? 0 : 1) >= 2 && room.hostId === room.hostId) {
+        await startRoundIfReady(cleanCode);
+      }
+
       listenRoom(roomCode);
     }
 
+    async function startRoundIfReady(code) {
+      const snap = await roomsRef.child(code).get();
+      if (!snap.exists()) return;
+      const room = snap.val();
+      if (room.status !== 'waiting') return;
+      if (roomPlayersCount(room) < 2) return;
+
+      const updates = {
+        status: 'playing',
+        winnerId: ''
+      };
+
+      Object.keys(room.players || {}).forEach((pid) => {
+        updates[`players/${pid}/progress`] = 0;
+        updates[`players/${pid}/questionIndex`] = 0;
+        updates[`players/${pid}/questionStartedAt`] = Date.now();
+        updates[`players/${pid}/lastAnsweredQuestionIndex`] = -1;
+        updates[`players/${pid}/finishedAt`] = 0;
+        updates[`players/${pid}/online`] = true;
+      });
+
+      await roomsRef.child(code).update(updates);
+    }
+
     function listenRoom(code) {
-      if (roomListener) roomsRef.child(roomCode).off('value', roomListener);
+      if (roomListener && roomCode) {
+        roomsRef.child(roomCode).off('value', roomListener);
+      }
+
       roomCode = code;
-      roomListener = async (snap) => {
+      roomListener = (snap) => {
         if (!snap.exists()) {
           alert('החדר נסגר');
           location.href = location.pathname;
           return;
         }
         roomState = snap.val();
-        await autoFlow(roomState);
+        autoFlow(roomState);
       };
+
       roomsRef.child(roomCode).on('value', roomListener);
       window.addEventListener('beforeunload', markOffline);
     }
 
-    async function autoFlow(room) {
+    function autoFlow(room) {
       const me = myPlayer(room);
-      const opponent = otherPlayer(room);
       if (!me) return;
 
       if (room.status === 'waiting') {
+        clearQuestionTimer();
         renderInvite(room);
-        if (playerEntries(room).length === 2 && isHost) {
-          await startCountdown();
-          return;
-        }
-        if (window.location.search.includes('room=')) {
-          showScreen('invite');
-        } else {
-          showScreen('invite');
-        }
-      }
-
-      if (room.status === 'countdown') {
-        if (hostAdvanceTimeout) {
-          clearTimeout(hostAdvanceTimeout);
-          hostAdvanceTimeout = null;
-        }
-        renderWaitStart(room);
-        showScreen('waitStart');
-        runCountdownVisual(room.countdownStartAt);
+        showScreen('invite');
+        return;
       }
 
       if (room.status === 'playing') {
-        clearCountdown();
         showScreen('game');
         renderGame(room);
-        scheduleHostAdvanceCheck(room);
+        return;
       }
 
       if (room.status === 'round_end') {
-        if (hostAdvanceTimeout) {
-          clearTimeout(hostAdvanceTimeout);
-          hostAdvanceTimeout = null;
-        }
-        clearTimer();
+        clearQuestionTimer();
         showScreen('result');
         renderResult(room);
       }
@@ -604,81 +694,22 @@
         els.inviteLink.textContent = url;
       } else {
         els.inviteLink.removeAttribute('href');
-        els.inviteLink.textContent = 'כדי לקבל קישור לחיץ צריך לאחסן את הקובץ אונליין. כרגע שלח את קוד החדר: ' + room.code;
+        els.inviteLink.textContent = 'כרגע הקובץ פתוח מקומית. שלח את קוד החדר: ' + room.code;
       }
+
       const me = myPlayer(room);
       const opponent = otherPlayer(room);
+
       els.hostNameWait.textContent = room.players[room.hostId]?.name || me?.name || 'שחקן 1';
       els.guestNameWait.textContent = opponent ? opponent.name : 'ממתין לשחקן נוסף…';
       els.guestWaitStatus.textContent = opponent ? 'התחבר לחדר' : 'עדיין לא נכנס';
       els.guestWaitStatus.className = 'player-status ' + (opponent ? 'status-on' : 'status-off');
     }
 
-    function renderWaitStart(room) {
-      const entries = playerEntries(room).map(([id,p]) => ({id,...p}));
-      els.waitP1.textContent = entries[0]?.name || 'שחקן 1';
-      els.waitP2.textContent = entries[1]?.name || 'שחקן 2';
-    }
-
-    async function startCountdown() {
-      if (!isHost || !roomState || roomState.status !== 'waiting') return;
-      const questions = pickQuestions(7).map((item, idx) => ({...item, key: 'q' + idx}));
-      await roomsRef.child(roomCode).update({
-        status: 'countdown',
-        countdownStartAt: Date.now(),
-        game: {
-          questions,
-          currentIndex: 0,
-          questionStartedAt: null,
-          answers: {},
-          fastestCorrectPlayerId: null,
-          winnerId: null,
-          finishedAt: null
-        }
-      });
-      setTimeout(() => {
-        const currentRoom = roomState;
-        if (currentRoom && currentRoom.status === 'countdown' && isHost) startGame();
-      }, 3200);
-    }
-
-    function runCountdownVisual(startAt) {
-      clearCountdown();
-      const endAt = startAt + 3000;
-      const tick = () => {
-        const left = Math.max(0, endAt - Date.now());
-        const sec = Math.max(1, Math.ceil(left / 1000));
-        els.countdownText.textContent = left <= 0 ? '1' : String(sec);
-        if (left <= 0) clearCountdown();
-      };
-      tick();
-      countdownInterval = setInterval(tick, 150);
-    }
-
-    function clearCountdown() {
-      if (countdownInterval) clearInterval(countdownInterval);
-      countdownInterval = null;
-    }
-
-    async function startGame() {
-      if (!isHost) return;
-      await roomsRef.child(roomCode).child('game').update({
-        currentIndex: 0,
-        questionStartedAt: Date.now(),
-        answers: {},
-        fastestCorrectPlayerId: null,
-        winnerId: null,
-        finishedAt: null
-      });
-      await roomsRef.child(roomCode).update({status:'playing'});
-    }
-
     function renderGame(room) {
       const me = myPlayer(room);
-      const opponent = otherPlayer(room) || {name:'יריב',wins:0,progress:0};
-      const game = room.game;
-      const q = game.questions[game.currentIndex];
-      if (!q) return;
+      const opponent = otherPlayer(room) || { name:'יריב', wins:0, progress:0, questionIndex:0 };
+      const myQuestion = getQuestionForPlayer(me);
 
       els.meNameTop.textContent = me.name;
       els.opponentNameTop.textContent = opponent.name;
@@ -688,196 +719,153 @@
       els.opWinsTop.textContent = opponent.wins || 0;
       els.meProgressTop.textContent = me.progress || 0;
       els.opProgressTop.textContent = opponent.progress || 0;
+      els.meQuestionTop.textContent = (me.questionIndex || 0) + 1;
+      els.opQuestionTop.textContent = (opponent.questionIndex || 0) + 1;
       els.roundBadge.textContent = 'סבב ' + (room.round || 1);
+
       moveRunner(els.myRunner, me.progress || 0);
       moveRunner(els.opRunner, opponent.progress || 0);
 
-      els.questionIndex.textContent = `שאלה ${game.currentIndex + 1} מתוך ${game.questions.length}`;
-      els.questionText.textContent = q.q;
-      renderAnswers(q, room);
-      updateNotice(room);
-      runTimer(game.questionStartedAt);
-    }
-
-    function moveRunner(el, progress) {
-      const percent = Math.max(0, Math.min(100, (progress / FINISH_STEPS) * 100));
-      el.style.left = `calc(${percent}% + ${percent === 100 ? -8 : 0}px)`;
-    }
-
-    function renderAnswers(question, room) {
-      const meAnswer = room.game.answers?.[playerId];
-      const locked = !!meAnswer || room.status !== 'playing';
-      if (currentQuestionKey !== question.key) {
-        if (hostAdvanceTimeout) {
-          clearTimeout(hostAdvanceTimeout);
-          hostAdvanceTimeout = null;
-        }
+      if (!myQuestion) {
+        els.questionIndex.textContent = 'סיום';
+        els.questionText.textContent = 'סיימת את כל השאלות. ממתינים לסיום הסבב...';
         els.answersBox.innerHTML = '';
-        currentQuestionKey = question.key;
+        els.noticeBox.textContent = 'כאן כבר אין עוד שאלות עבורך. עכשיו מחכים לניצחון או לסיום הסבב.';
+        clearQuestionTimer();
+        els.timerText.textContent = '0';
+        els.timerRing.style.background = 'conic-gradient(var(--primary) 0%, #e6ecff 0% 100%)';
+        return;
       }
+
+      els.questionIndex.textContent = `שאלה ${(me.questionIndex || 0) + 1} מתוך ${QUESTIONS.length}`;
+      els.questionText.textContent = myQuestion.q;
+      renderAnswers(me, myQuestion);
+      updateNotice(me, opponent, myQuestion);
+      if (currentRenderedQuestionIndex !== me.questionIndex) {
+        currentRenderedQuestionIndex = me.questionIndex;
+      }
+      runTimer();
+    }
+
+    function renderAnswers(me, question) {
+      const alreadyAnswered = me.lastAnsweredQuestionIndex === me.questionIndex;
       els.answersBox.innerHTML = '';
+
       question.a.forEach((ans, index) => {
         const btn = document.createElement('button');
-        btn.className = 'answer' + (locked ? ' locked' : '');
+        btn.className = 'answer' + (alreadyAnswered ? ' locked' : '');
         btn.textContent = ans;
-        if (meAnswer) {
+
+        if (alreadyAnswered) {
+          const lastCorrect = me.lastAnswerCorrect === true;
           if (index === question.c) btn.classList.add('correct');
-          if (meAnswer.choice === index && index !== question.c) btn.classList.add('wrong');
+          if (!lastCorrect && index === me.lastAnswerChoice && index !== question.c) btn.classList.add('wrong');
         }
+
         btn.onclick = () => submitAnswer(index);
         els.answersBox.appendChild(btn);
       });
     }
 
-    function updateNotice(room) {
-      const game = room.game;
-      const meAnswer = game.answers?.[playerId];
-      if (!meAnswer) {
-        els.noticeBox.textContent = 'הראשון שעונה נכון מקבל צעד נוסף.';
+    function updateNotice(me, opponent, question) {
+      const alreadyAnswered = me.lastAnsweredQuestionIndex === me.questionIndex;
+      if (!alreadyAnswered) {
+        els.noticeBox.textContent = `אתה בשאלה ${(me.questionIndex || 0) + 1}. ענית נכון? אתה מתקדם צעד. ענית לא נכון? נשאר במקום ועובר לשאלה הבאה. היריב כרגע על שאלה ${(opponent.questionIndex || 0) + 1}.`;
         return;
       }
-      const isCorrect = meAnswer.choice === game.questions[game.currentIndex].c;
-      const gotBonus = game.fastestCorrectPlayerId === playerId && isCorrect;
-      els.noticeBox.textContent = isCorrect
-        ? (gotBonus ? 'נכון. קיבלת גם בונוס מהירות.' : 'נכון. התקדמת צעד אחד.')
-        : 'לא נכון. בשאלה הבאה אפשר להשיג את היריב.';
-    }
 
-    function runTimer(startAt) {
-      clearTimer();
-      const finishAt = startAt + QUESTION_TIME * 1000;
-      const tick = () => {
-        const leftMs = Math.max(0, finishAt - Date.now());
-        const seconds = Math.ceil(leftMs / 1000);
-        const pct = Math.max(0, Math.min(100, (leftMs / (QUESTION_TIME * 1000)) * 100));
-        els.timerText.textContent = seconds;
-        els.timerRing.style.background = `conic-gradient(var(--primary) ${pct}%, #e6ecff ${pct}% 100%)`;
-        if (leftMs <= 0) clearTimer();
-      };
-      tick();
-      timerInterval = setInterval(tick, 120);
-    }
-
-    function clearTimer() {
-      if (timerInterval) clearInterval(timerInterval);
-      timerInterval = null;
+      if (me.lastAnswerCorrect) {
+        els.noticeBox.textContent = 'נכון. התקדמת צעד אחד ועברת לשאלה הבאה.';
+      } else {
+        els.noticeBox.textContent = 'לא נכון. נשארת במקום, אבל עברת לשאלה הבאה.';
+      }
     }
 
     async function submitAnswer(choiceIndex) {
       if (!roomState || roomState.status !== 'playing') return;
-      const game = roomState.game;
-      if (game.answers?.[playerId]) return;
-      const question = game.questions[game.currentIndex];
-      const isCorrect = choiceIndex === question.c;
-      const updates = {};
-      updates[`game/answers/${playerId}`] = {
-        choice: choiceIndex,
-        answeredAt: Date.now(),
-        correct: isCorrect
-      };
-      if (isCorrect && !game.fastestCorrectPlayerId) {
-        updates['game/fastestCorrectPlayerId'] = playerId;
-      }
-      await roomsRef.child(roomCode).update(updates);
 
-      // רק המארח מקדם את המשחק, לכן אחרי כל תשובה הוא בודק שוב.
-      if (isHost) {
-        setTimeout(checkAdvanceQuestion, 350);
-      }
-    }
+      const me = myPlayer(roomState);
+      if (!me) return;
+      if (me.lastAnsweredQuestionIndex === me.questionIndex) return;
 
-    function scheduleHostAdvanceCheck(room) {
-      if (!isHost || !room || room.status !== 'playing') return;
-      const game = room.game;
-      if (!game || !game.questionStartedAt) return;
-
-      const q = game.questions?.[game.currentIndex];
-      const qKey = q?.key || ('q_' + game.currentIndex);
-
-      if (hostAdvanceTimeout && currentQuestionKey === qKey) return;
-
-      if (hostAdvanceTimeout) {
-        clearTimeout(hostAdvanceTimeout);
-        hostAdvanceTimeout = null;
-      }
-
-      const now = Date.now();
-      const msLeft = Math.max(50, (game.questionStartedAt + QUESTION_TIME * 1000 + 120) - now);
-      hostAdvanceTimeout = setTimeout(() => {
-        hostAdvanceTimeout = null;
-        checkAdvanceQuestion();
-      }, msLeft);
-    }
-
-    async function checkAdvanceQuestion() {
-      const snap = await roomsRef.child(roomCode).get();
-      if (!snap.exists()) return;
-      const room = snap.val();
-      if (!isHost || room.status !== 'playing') return;
-      const game = room.game;
-      const question = game.questions?.[game.currentIndex];
+      const question = getQuestionForPlayer(me);
       if (!question) return;
-      if (currentQuestionKey && question.key !== currentQuestionKey) return;
-      const players = playerEntries(room);
-      const allAnswered = players.every(([pid]) => !!game.answers?.[pid]);
-      const timedOut = Date.now() >= (game.questionStartedAt + QUESTION_TIME * 1000 + 100);
-      if (!allAnswered && !timedOut) return;
 
-      const updates = {};
-      players.forEach(([pid, p]) => {
-        const ans = game.answers?.[pid];
-        let add = 0;
-        if (ans?.choice === question.c) add += 1;
-        if (game.fastestCorrectPlayerId === pid && ans?.choice === question.c) add += 1;
-        const current = room.players?.[pid]?.progress || 0;
-        updates[`players/${pid}/progress`] = Math.min(FINISH_STEPS, current + add);
-      });
+      const isCorrect = choiceIndex === question.c;
+      await advanceMyQuestion(isCorrect, false, choiceIndex);
+    }
+
+    async function advanceMyQuestion(isCorrect, fromTimeout = false, answerChoice = -1) {
+      if (!roomState || roomState.status !== 'playing') return;
+
+      const freshSnap = await roomsRef.child(roomCode).get();
+      if (!freshSnap.exists()) return;
+      const freshRoom = freshSnap.val();
+      const me = freshRoom.players?.[playerId];
+      if (!me) return;
+      if (freshRoom.status !== 'playing') return;
+      if (me.lastAnsweredQuestionIndex === me.questionIndex) return;
+
+      const currentQIndex = me.questionIndex || 0;
+      const nextQIndex = currentQIndex + 1;
+      const newProgress = Math.min(FINISH_STEPS, (me.progress || 0) + (isCorrect ? 1 : 0));
+      const now = Date.now();
+
+      const updates = {
+        [`players/${playerId}/progress`]: newProgress,
+        [`players/${playerId}/questionIndex`]: nextQIndex,
+        [`players/${playerId}/questionStartedAt`]: now,
+        [`players/${playerId}/lastAnsweredQuestionIndex`]: currentQIndex,
+        [`players/${playerId}/lastAnswerCorrect`]: !!isCorrect,
+        [`players/${playerId}/lastAnswerChoice`]: answerChoice,
+      };
+
+      if (newProgress >= FINISH_STEPS) {
+        updates[`players/${playerId}/finishedAt`] = now;
+        updates['winnerId'] = playerId;
+        updates['status'] = 'round_end';
+        updates[`players/${playerId}/wins`] = (me.wins || 0) + 1;
+      } else {
+        const allPlayers = Object.values(freshRoom.players || {});
+        const everyoneFinishedQuestions = allPlayers.every(p => (p.id === playerId ? nextQIndex : (p.questionIndex || 0)) >= QUESTIONS.length);
+
+        if (everyoneFinishedQuestions) {
+          const simulatedPlayers = Object.entries(freshRoom.players || {}).map(([pid, p]) => {
+            if (pid === playerId) {
+              return [pid, { ...p, progress: newProgress, questionIndex: nextQIndex, finishedAt: p.finishedAt || 0 }];
+            }
+            return [pid, p];
+          });
+
+          simulatedPlayers.sort((a, b) => {
+            const progressDiff = (b[1].progress || 0) - (a[1].progress || 0);
+            if (progressDiff !== 0) return progressDiff;
+            const aTime = a[1].finishedAt || Number.MAX_SAFE_INTEGER;
+            const bTime = b[1].finishedAt || Number.MAX_SAFE_INTEGER;
+            return aTime - bTime;
+          });
+
+          const winnerId = simulatedPlayers[0][0];
+          const winner = freshRoom.players[winnerId];
+          updates['winnerId'] = winnerId;
+          updates['status'] = 'round_end';
+          if (winnerId === playerId) {
+            updates[`players/${winnerId}/wins`] = (me.wins || 0) + 1;
+          } else {
+            updates[`players/${winnerId}/wins`] = (winner?.wins || 0) + 1;
+          }
+        }
+      }
+
       await roomsRef.child(roomCode).update(updates);
-
-      const afterSnap = await roomsRef.child(roomCode).get();
-      const afterRoom = afterSnap.val();
-      const winnerEntry = playerEntries(afterRoom).find(([,p]) => (p.progress || 0) >= FINISH_STEPS);
-      if (winnerEntry) {
-        const winnerId = winnerEntry[0];
-        const currentWins = afterRoom.players[winnerId].wins || 0;
-        await roomsRef.child(roomCode).update({
-          [`players/${winnerId}/wins`]: currentWins + 1,
-          status: 'round_end',
-          'game/winnerId': winnerId,
-          'game/finishedAt': Date.now()
-        });
-        return;
-      }
-
-      const nextIndex = game.currentIndex + 1;
-      const questionPoolExhausted = nextIndex >= game.questions.length;
-      if (questionPoolExhausted) {
-        const entries = playerEntries(afterRoom);
-        entries.sort((a,b)=>(b[1].progress||0)-(a[1].progress||0));
-        const winnerId = entries[0][0];
-        const currentWins = afterRoom.players[winnerId].wins || 0;
-        await roomsRef.child(roomCode).update({
-          [`players/${winnerId}/wins`]: currentWins + 1,
-          status: 'round_end',
-          'game/winnerId': winnerId,
-          'game/finishedAt': Date.now()
-        });
-        return;
-      }
-
-      await roomsRef.child(roomCode).child('game').update({
-        currentIndex: nextIndex,
-        questionStartedAt: Date.now(),
-        answers: {},
-        fastestCorrectPlayerId: null
-      });
     }
 
     function renderResult(room) {
       const me = myPlayer(room);
-      const opponent = otherPlayer(room) || {name:'יריב',wins:0};
-      const winnerId = room.game?.winnerId;
+      const opponent = otherPlayer(room) || { name:'יריב', wins:0 };
+      const winnerId = room.winnerId;
       const winnerName = room.players?.[winnerId]?.name || 'יש מנצח';
+
       els.resultTitle.textContent = winnerId === playerId ? 'ניצחת בסבב' : `${winnerName} ניצח בסבב`;
       els.resultSub.textContent = `תוצאה כרגע: ${me.name} ${me.wins || 0} - ${opponent.wins || 0} ${opponent.name}`;
       els.resultMeName.textContent = me.name;
@@ -890,30 +878,35 @@
 
     async function startNextRound() {
       if (!isHost || !roomState) return;
-      const updates = { status:'countdown', countdownStartAt: Date.now(), round:(roomState.round || 1) + 1 };
-      playerEntries(roomState).forEach(([pid]) => {
-        updates[`players/${pid}/progress`] = 0;
-      });
-      updates['game'] = {
-        questions: pickQuestions(7).map((item, idx) => ({...item, key:'r'+Date.now()+'q'+idx})),
-        currentIndex: 0,
-        questionStartedAt: null,
-        answers: {},
-        fastestCorrectPlayerId: null,
-        winnerId: null,
-        finishedAt: null
+
+      const freshSnap = await roomsRef.child(roomCode).get();
+      if (!freshSnap.exists()) return;
+      const freshRoom = freshSnap.val();
+
+      const updates = {
+        status: 'playing',
+        winnerId: '',
+        round: (freshRoom.round || 1) + 1
       };
+
+      Object.keys(freshRoom.players || {}).forEach((pid) => {
+        updates[`players/${pid}/progress`] = 0;
+        updates[`players/${pid}/questionIndex`] = 0;
+        updates[`players/${pid}/questionStartedAt`] = Date.now();
+        updates[`players/${pid}/lastAnsweredQuestionIndex`] = -1;
+        updates[`players/${pid}/lastAnswerCorrect`] = false;
+        updates[`players/${pid}/lastAnswerChoice`] = -1;
+        updates[`players/${pid}/finishedAt`] = 0;
+      });
+
+      currentRenderedQuestionIndex = -1;
       await roomsRef.child(roomCode).update(updates);
-      setTimeout(() => {
-        const currentRoom = roomState;
-        if (currentRoom && currentRoom.status === 'countdown' && isHost) startGame();
-      }, 3200);
     }
 
     async function markOffline() {
       try {
         if (roomCode && db) {
-          await roomsRef.child(roomCode).child('players').child(playerId).update({online:false});
+          await roomsRef.child(roomCode).child('players').child(playerId).update({ online:false });
         }
       } catch (e) {}
     }
@@ -925,34 +918,28 @@
       els.joinFromLinkBtn.onclick = () => joinRoomByCode(roomCode, els.playerNameJoinLink.value);
       els.nextRoundBtn.onclick = () => startNextRound();
       els.copyInviteBtn.onclick = async () => {
-        const link = inviteUrl(roomCode);
-        const textToCopy = link
-          ? `בוא למשחק טריוויה מולי\nהצטרף כאן: ${link}\nקוד חדר: ${roomCode}`
-          : `בוא למשחק טריוויה מולי\nקוד חדר: ${roomCode}`;
-        await navigator.clipboard.writeText(textToCopy);
+        const text = buildInviteText(roomCode);
+        await navigator.clipboard.writeText(text);
         els.copyInviteBtn.textContent = 'הועתק';
-        setTimeout(()=> els.copyInviteBtn.textContent = 'העתק קישור', 1200);
+        setTimeout(() => els.copyInviteBtn.textContent = 'העתק הזמנה', 1200);
       };
       els.whatsappBtn.onclick = () => {
-        const link = inviteUrl(roomCode);
-        const text = encodeURIComponent(
-          link
-            ? `בוא למשחק טריוויה מולי\nהצטרף כאן: ${link}\nקוד חדר: ${roomCode}`
-            : `בוא למשחק טריוויה מולי\nקוד חדר: ${roomCode}`
-        );
+        const text = encodeURIComponent(buildInviteText(roomCode));
         window.open(`https://wa.me/?text=${text}`, '_blank');
       };
       els.closeSetupBtn.onclick = () => els.setupOverlay.classList.add('hidden');
     }
 
-    async function autoJoinFromUrl() {
+    function autoJoinFromUrl() {
       const params = new URLSearchParams(window.location.search);
       const room = (params.get('room') || '').trim().toUpperCase();
+
       if (!room) {
         if (myName) els.playerName.value = myName;
         showScreen('home');
         return;
       }
+
       roomCode = room;
       els.autoJoinRoomCode.textContent = room;
       if (myName) els.playerNameJoinLink.value = myName;
@@ -961,8 +948,11 @@
 
     function boot() {
       setupActions();
+      if (myName) {
+        els.playerName.value = myName;
+        els.playerNameJoinLink.value = myName;
+      }
       if (!initFirebase()) {
-        if (myName) els.playerName.value = myName;
         autoJoinFromUrl();
         return;
       }
