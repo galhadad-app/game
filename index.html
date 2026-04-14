@@ -577,6 +577,7 @@
         clearCountdown();
         showScreen('game');
         renderGame(room);
+        scheduleHostAdvanceCheck(room);
       }
 
       if (room.status === 'round_end') {
@@ -766,7 +767,25 @@
         updates['game/fastestCorrectPlayerId'] = playerId;
       }
       await roomsRef.child(roomCode).update(updates);
-      setTimeout(checkAdvanceQuestion, 350);
+
+      // רק המארח מקדם את המשחק, לכן אחרי כל תשובה הוא בודק שוב.
+      if (isHost) {
+        setTimeout(checkAdvanceQuestion, 350);
+      }
+    }
+
+    function scheduleHostAdvanceCheck(room) {
+      if (!isHost || !room || room.status !== 'playing') return;
+      const game = room.game;
+      if (!game || !game.questionStartedAt) return;
+
+      const now = Date.now();
+      const msLeft = (game.questionStartedAt + QUESTION_TIME * 1000 + 120) - now;
+      if (msLeft <= 0) {
+        setTimeout(checkAdvanceQuestion, 50);
+      } else {
+        setTimeout(checkAdvanceQuestion, msLeft);
+      }
     }
 
     async function checkAdvanceQuestion() {
