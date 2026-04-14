@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>דו-קרב טריוויה</title>
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <style>
+    :root{
+      --bg:#f3f7f2;
+      --card:#ffffff;
+      --text:#1d2a20;
+      --muted:#66756a;
+      --line:#dce6dd;
+      --primary:#326b45;
+      --primary-2:#4e8b63;
+      --soft:#edf5ef;
+      --danger:#b84848;
+      --success:#2f7d45;
+      --shadow:0 18px 45px rgba(31,53,37,.08);
+      --radius:24px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Arial,"Heebo",sans-serif;
+      background:linear-gradient(180deg,#f7faf7 0%, #edf5ef 100%);
+      color:var(--text);
+      min-height:100vh;
+    }
+    .app{
+      max-width:560px;
+      margin:0 auto;
+      padding:18px 14px 28px;
+    }
+    .panel{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:20px;
+      margin-top:14px;
+    }
+    .hero{
+      padding:28px 22px;
+      background:linear-gradient(135deg,#326b45 0%,#4a7e5b 100%);
+      color:#fff;
+      border:none;
+    }
+    h1,h2,h3,p{margin:0}
+    h1{font-size:32px;line-height:1.1;margin-bottom:8px}
+    h2{font-size:22px;margin-bottom:14px}
+    .sub{color:rgba(255,255,255,.9);font-size:15px;line-height:1.5}
+    .muted{color:var(--muted)}
+    .row{display:flex;gap:10px;flex-wrap:wrap}
+    .row > *{flex:1}
+    input{
+      width:100%;
+      padding:14px 14px;
+      border-radius:16px;
+      border:1px solid var(--line);
+      background:#fff;
+      font-size:16px;
+      outline:none;
+    }
+    input:focus{border-color:var(--primary-2);box-shadow:0 0 0 4px rgba(78,139,99,.12)}
+    button{
+      border:none;
+      border-radius:16px;
+      padding:14px 16px;
+      font-size:16px;
+      font-weight:700;
+      cursor:pointer;
+      transition:transform .16s ease, opacity .16s ease, box-shadow .16s ease;
+    }
+    button:hover{transform:translateY(-1px)}
+    button:active{transform:scale(.98)}
+    .btn-primary{background:var(--primary);color:#fff;box-shadow:0 10px 24px rgba(50,107,69,.18)}
+    .btn-secondary{background:var(--soft);color:var(--text);border:1px solid var(--line)}
+    .btn-ghost{background:transparent;color:var(--primary);border:1px dashed var(--primary-2)}
+    .hide{display:none !important}
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 12px;
+      background:#f3f7f4;
+      border:1px solid var(--line);
+      border-radius:999px;
+      font-size:14px;
+      color:var(--muted);
+    }
+    .status{margin-top:14px;font-size:14px;line-height:1.5}
+    .invite-box{
+      background:#f8fbf8;
+      border:1px dashed #bfd3c3;
+      border-radius:18px;
+      padding:14px;
+      margin-top:12px;
+      word-break:break-all;
+      font-size:14px;
+      color:#2c4532;
+    }
+
+    .hud{
+      display:grid;
+      grid-template-columns:1fr auto;
+      gap:10px;
+      align-items:center;
+      margin-bottom:14px;
+    }
+    .question-count{font-size:14px;color:var(--muted)}
+    .race-wrap{
+      margin-top:12px;
+      background:#f6faf7;
+      border:1px solid var(--line);
+      border-radius:22px;
+      padding:16px;
+    }
+    .track-title{font-size:15px;margin-bottom:10px;color:#35513d;font-weight:700}
+    .track{
+      position:relative;
+      background:linear-gradient(90deg,#edf5ef 0%, #f9fcf9 100%);
+      border:1px solid var(--line);
+      border-radius:20px;
+      padding:14px 12px 14px 12px;
+      min-height:82px;
+      overflow:hidden;
+    }
+    .finish{
+      position:absolute;
+      left:14px;
+      top:10px;
+      bottom:10px;
+      width:8px;
+      border-radius:999px;
+      background:repeating-linear-gradient(180deg,#326b45 0 10px,#ffffff 10px 20px);
+      opacity:.8;
+    }
+    .lane{position:relative;height:24px;margin:8px 0}
+    .lane-label{font-size:13px;color:var(--muted);margin-bottom:4px}
+    .runner{
+      position:absolute;
+      right:0;
+      top:0;
+      transform:translateX(0);
+      width:42px;height:24px;
+      border-radius:999px;
+      background:linear-gradient(135deg,#3c7b50,#66a57d);
+      color:#fff;
+      display:flex;align-items:center;justify-content:center;
+      font-size:14px;font-weight:700;
+      box-shadow:0 8px 16px rgba(60,123,80,.18);
+      transition:transform .35s cubic-bezier(.22,.9,.25,1.1);
+    }
+    .runner.opponent{background:linear-gradient(135deg,#7a8f7f,#9bb0a0)}
+
+    .card-question{
+      margin-top:16px;
+      padding:18px;
+      border:1px solid var(--line);
+      border-radius:22px;
+      background:#fff;
+    }
+    .question-text{
+      font-size:24px;
+      line-height:1.4;
+      margin-bottom:16px;
+      font-weight:700;
+    }
+    .answers{display:grid;gap:10px}
+    .answer{
+      width:100%;
+      text-align:right;
+      background:#f8fbf8;
+      border:1px solid var(--line);
+      color:var(--text);
+      padding:15px 16px;
+      border-radius:18px;
+      font-size:16px;
+      font-weight:600;
+    }
+    .answer:hover{background:#f1f7f2}
+    .answer.correct{background:#ebf7ee;border-color:#b8dfc2;color:#245b33}
+    .answer.wrong{background:#fff0f0;border-color:#efc3c3;color:#8b3131}
+    .answer.locked{pointer-events:none;opacity:.85}
+    .feedback{margin-top:12px;font-size:15px;min-height:24px;font-weight:700}
+    .feedback.ok{color:var(--success)}
+    .feedback.no{color:var(--danger)}
+
+    .score-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr 1fr;
+      gap:10px;
+      margin-top:14px;
+    }
+    .mini{
+      background:#f8fbf8;
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:12px;
+      text-align:center;
+    }
+    .mini strong{display:block;font-size:22px;margin-top:4px}
+    .overlay{
+      position:fixed;inset:0;
+      background:rgba(21,34,25,.48);
+      display:flex;align-items:center;justify-content:center;
+      padding:20px;
+      z-index:50;
+    }
+    .modal{
+      width:min(100%,500px);
+      background:#fff;
+      border-radius:28px;
+      padding:24px;
+      box-shadow:0 30px 60px rgba(0,0,0,.2);
+      text-align:center;
+    }
+    .winner-title{font-size:32px;margin-bottom:10px}
+    .winner-sub{font-size:16px;color:var(--muted);line-height:1.5;margin-bottom:18px}
+    .tag{display:inline-block;background:#edf5ef;color:#35513d;padding:8px 12px;border-radius:999px;font-size:14px;margin-bottom:10px}
+    .tiny{font-size:12px;color:var(--muted);line-height:1.5;margin-top:10px}
+    @media (max-width:480px){
+      h1{font-size:28px}
+      .question-text{font-size:21px}
+      .panel{padding:16px}
+      .hero{padding:22px 18px}
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <section class="panel hero">
+      <h1>דו-קרב טריוויה</h1>
+      <p class="sub">משחק רשת פשוט לשני משתתפים. כל תשובה נכונה מקדמת אותך במסלול. הראשון שמגיע לסוף — מנצח.</p>
+    </section>
+
+    <section id="lobbyScreen" class="panel">
+      <h2>כניסה למשחק</h2>
+      <div class="row" style="margin-top:12px">
+        <div><input id="playerName" placeholder="השם שלך" maxlength="18"></div>
+      </div>
+
+      <div class="row" style="margin-top:12px">
+        <button id="createRoomBtn" class="btn-primary">צור חדר חדש</button>
+        <button id="joinFromLinkBtn" class="btn-secondary">הצטרף מהקישור</button>
+      </div>
+
+      <div id="hostPanel" class="hide" style="margin-top:16px">
+        <div class="pill">החדר נוצר. שלח את ההזמנה לחבר.</div>
+        <div class="invite-box" id="inviteLinkBox"></div>
+        <div class="invite-box" id="roomCodeBox" style="margin-top:8px;background:#fff"></div>
+        <div class="row" style="margin-top:12px">
+          <button id="shareWhatsappBtn" class="btn-primary">שלח הזמנה בוואטסאפ</button>
+          <button id="copyInviteBtn" class="btn-secondary">העתק קישור</button>
+        </div>
+      </div>
+
+      <div id="joinPanel" class="hide" style="margin-top:16px">
+        <div class="pill">הצטרפות לחדר קיים</div>
+        <div class="row" style="margin-top:12px">
+          <div><input id="roomIdInput" placeholder="קוד חדר"></div>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <button id="joinRoomBtn" class="btn-primary">התחבר למשחק</button>
+        </div>
+      </div>
+
+      <div class="status" id="lobbyStatus">מוכן להתחיל.</div>
+      <div class="tiny">אם המשחק פתוח כאתר רגיל יישלח קישור לחיץ. אם זה קובץ HTML מקומי, תישלח בוואטסאפ הזמנה עם קוד חדר, והשחקן השני יפתח את אותו קובץ ויזין את הקוד.</div>
+    </section>
+
+    <section id="gameScreen" class="panel hide">
+      <div class="hud">
+        <div>
+          <div class="pill" id="roomLabel">חדר</div>
+        </div>
+        <div class="question-count" id="questionCount">שאלה 1</div>
+      </div>
+
+      <div class="race-wrap">
+        <div class="track-title">מסלול המרוץ</div>
+        <div class="track" id="track">
+          <div class="finish"></div>
+          <div class="lane-label" id="youLabel">אתה</div>
+          <div class="lane">
+            <div id="runnerYou" class="runner">אתה</div>
+          </div>
+          <div class="lane-label" id="opponentLabel">יריב</div>
+          <div class="lane">
+            <div id="runnerOpponent" class="runner opponent">יריב</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="score-grid">
+        <div class="mini">התקדמות<strong id="myScore">0</strong></div>
+        <div class="mini">ניצחונות נדרשים<strong id="goalScore">7</strong></div>
+        <div class="mini">היריב<strong id="opponentScore">0</strong></div>
+      </div>
+
+      <div class="card-question">
+        <div class="question-text" id="questionText">טוען שאלה...</div>
+        <div class="answers" id="answersBox"></div>
+        <div id="feedback" class="feedback"></div>
+      </div>
+    </section>
+  </div>
+
+  <div id="winnerOverlay" class="overlay hide">
+    <div class="modal">
+      <div class="tag">סיום משחק</div>
+      <div id="winnerTitle" class="winner-title">ניצחון!</div>
+      <div id="winnerSub" class="winner-sub">המשחק הסתיים.</div>
+      <div class="row" style="margin-top:12px">
+        <button id="playAgainBtn" class="btn-primary">משחק חדש</button>
+        <button id="backLobbyBtn" class="btn-secondary">חזרה ללובי</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const QUESTIONS = [
+      {q:'מהי בירת צרפת?', a:['פריז','רומא','ברלין'], c:0},
+      {q:'כמה ימים יש בשבוע?', a:['5','7','9'], c:1},
+      {q:'איזה כוכב לכת נקרא "הכוכב האדום"?', a:['נוגה','מאדים','שבתאי'], c:1},
+      {q:'מהו הצבע שמתקבל מערבוב כחול וצהוב?', a:['ירוק','כתום','סגול'], c:0},
+      {q:'כמה דקות יש בשעה?', a:['60','100','30'], c:0},
+      {q:'איזו שפה מדברים בברזיל?', a:['ספרדית','פורטוגזית','איטלקית'], c:1},
+      {q:'מהו החודש הראשון בלוח השנה הלועזי?', a:['ינואר','מרץ','יוני'], c:0},
+      {q:'איזו חיה נחשבת למלך החיות?', a:['פיל','נמר','אריה'], c:2},
+      {q:'כמה פאות יש למשולש?', a:['3','4','5'], c:0},
+      {q:'מהי בירת ישראל?', a:['חיפה','ירושלים','תל אביב'], c:1},
+      {q:'איזה ים נמצא דרומית לאילת?', a:['הים התיכון','ים סוף','ים המלח'], c:1},
+      {q:'כמה חודשים יש בשנה?', a:['10','11','12'], c:2},
+      {q:'איזו מתכת יקרה בצבע צהוב?', a:['ברזל','כסף','זהב'], c:2},
+      {q:'מהי התוצאה של 5+4?', a:['9','8','10'], c:0},
+      {q:'איזו חיה אומרת "מיאו"?', a:['כלב','חתול','סוס'], c:1}
+    ];
+
+    const GOAL = 7;
+    const state = {
+      peer:null,
+      conn:null,
+      roomId:'',
+      myName:'',
+      opponentName:'יריב',
+      isHost:false,
+      started:false,
+      myScore:0,
+      opponentScore:0,
+      answered:new Set(),
+      gameOver:false,
+      seed:0,
+      order:[],
+      currentIndex:0
+    };
+
+    const els = {
+      lobby:document.getElementById('lobbyScreen'),
+      game:document.getElementById('gameScreen'),
+      playerName:document.getElementById('playerName'),
+      createRoomBtn:document.getElementById('createRoomBtn'),
+      joinFromLinkBtn:document.getElementById('joinFromLinkBtn'),
+      hostPanel:document.getElementById('hostPanel'),
+      joinPanel:document.getElementById('joinPanel'),
+      inviteLinkBox:document.getElementById('inviteLinkBox'),
+      shareWhatsappBtn:document.getElementById('shareWhatsappBtn'),
+      copyInviteBtn:document.getElementById('copyInviteBtn'),
+      roomCodeBox:document.getElementById('roomCodeBox'),
+      roomIdInput:document.getElementById('roomIdInput'),
+      joinRoomBtn:document.getElementById('joinRoomBtn'),
+      lobbyStatus:document.getElementById('lobbyStatus'),
+      roomLabel:document.getElementById('roomLabel'),
+      questionCount:document.getElementById('questionCount'),
+      questionText:document.getElementById('questionText'),
+      answersBox:document.getElementById('answersBox'),
+      feedback:document.getElementById('feedback'),
+      myScore:document.getElementById('myScore'),
+      opponentScore:document.getElementById('opponentScore'),
+      goalScore:document.getElementById('goalScore'),
+      runnerYou:document.getElementById('runnerYou'),
+      runnerOpponent:document.getElementById('runnerOpponent'),
+      youLabel:document.getElementById('youLabel'),
+      opponentLabel:document.getElementById('opponentLabel'),
+      winnerOverlay:document.getElementById('winnerOverlay'),
+      winnerTitle:document.getElementById('winnerTitle'),
+      winnerSub:document.getElementById('winnerSub'),
+      playAgainBtn:document.getElementById('playAgainBtn'),
+      backLobbyBtn:document.getElementById('backLobbyBtn')
+    };
+
+    function setStatus(msg){ els.lobbyStatus.textContent = msg; }
+    function getName(){ return (els.playerName.value || '').trim(); }
+    function slugId(){ return 'room-' + Math.random().toString(36).slice(2,8) + '-' + Date.now().toString(36).slice(-4); }
+    function isHostedPage(){ return location.protocol === 'http:' || location.protocol === 'https:'; }
+    function getBasePageUrl(){
+      if(!isHostedPage()) return '';
+      return `${location.origin}${location.pathname}`;
+    }
+    function getInviteLink(roomId){
+      const base = getBasePageUrl();
+      return base ? `${base}?room=${encodeURIComponent(roomId)}` : '';
+    }
+    function updateInviteUI(roomId){
+      const invite = getInviteLink(roomId);
+      if(invite){
+        els.inviteLinkBox.textContent = `קישור הזמנה: ${invite}`;
+      } else {
+        els.inviteLinkBox.textContent = 'הקובץ פתוח מקומית, לכן אי אפשר ליצור קישור לחיץ שעובד אצל המשתתף השני.';
+      }
+      els.roomCodeBox.textContent = `קוד חדר: ${roomId}`;
+    }
+    function shuffleBySeed(seed, array){
+      const arr = array.slice();
+      let s = seed;
+      for(let i=arr.length-1;i>0;i--){
+        s = (s * 9301 + 49297) % 233280;
+        const j = Math.floor((s / 233280) * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+    function resetGame(seed = Date.now()){
+      state.started = false;
+      state.myScore = 0;
+      state.opponentScore = 0;
+      state.currentIndex = 0;
+      state.answered = new Set();
+      state.gameOver = false;
+      state.seed = seed;
+      state.order = shuffleBySeed(seed, QUESTIONS.map((_,i)=>i));
+      updateScoreUI();
+      renderQuestion();
+      els.feedback.textContent = '';
+      els.feedback.className = 'feedback';
+      hideWinner();
+    }
+
+    function ensureName(){
+      const name = getName();
+      if(!name){ setStatus('צריך להזין שם לפני שמתחילים.'); els.playerName.focus(); return false; }
+      state.myName = name;
+      return true;
+    }
+
+    function initPeer(peerId){
+      if(state.peer){ try{ state.peer.destroy(); }catch(e){} }
+      state.peer = new Peer(peerId);
+      state.peer.on('open', id => {
+        state.roomId = id;
+        setStatus(state.isHost ? 'החדר מוכן. ממתין לחבר...' : 'החיבור מוכן. אפשר להצטרף.');
+        if(state.isHost){
+          updateInviteUI(id);
+        }
+      });
+      state.peer.on('connection', conn => {
+        if(!state.isHost) return;
+        attachConnection(conn, true);
+      });
+      state.peer.on('error', err => {
+        console.error(err);
+        setStatus('הייתה בעיית חיבור. אפשר לנסות שוב.');
+      });
+    }
+
+    function attachConnection(conn, isIncomingHostSide = false){
+      if(state.conn){ try{ state.conn.close(); }catch(e){} }
+      state.conn = conn;
+      state.conn.on('open', () => {
+        setStatus('החיבור בין השחקנים הצליח.');
+        if(state.isHost){
+          const seed = Date.now();
+          resetGame(seed);
+          state.conn.send({type:'hello', name:state.myName});
+          state.conn.send({type:'start', seed, goal:GOAL, hostName:state.myName});
+          state.started = true;
+          startGameUI();
+        } else {
+          state.conn.send({type:'hello', name:state.myName});
+        }
+      });
+      state.conn.on('data', data => handleMessage(data));
+      state.conn.on('close', () => {
+        if(!state.gameOver){
+          setStatus('החיבור נותק.');
+          showLobby();
+        }
+      });
+      state.conn.on('error', () => setStatus('שגיאת תקשורת בין המכשירים.'));
+    }
+
+    function handleMessage(data){
+      if(!data || typeof data !== 'object') return;
+      if(data.type === 'hello'){
+        state.opponentName = data.name || 'יריב';
+        updateLabels();
+      }
+      if(data.type === 'start'){
+        state.opponentName = data.hostName || state.opponentName;
+        resetGame(data.seed || Date.now());
+        state.started = true;
+        startGameUI();
+      }
+      if(data.type === 'progress'){
+        state.opponentScore = data.score || 0;
+        updateScoreUI();
+        if(state.opponentScore >= GOAL && !state.gameOver){
+          finishGame(false);
+        }
+      }
+      if(data.type === 'play-again'){
+        resetGame(data.seed || Date.now());
+        state.started = true;
+        startGameUI();
+      }
+      if(data.type === 'game-over'){
+        if(!state.gameOver){ finishGame(false); }
+      }
+    }
+
+    function startGameUI(){
+      showGame();
+      updateLabels();
+      els.roomLabel.textContent = `חדר: ${state.roomId}`;
+      renderQuestion();
+      updateScoreUI();
+    }
+
+    function renderQuestion(){
+      const qIndex = state.order[state.currentIndex % state.order.length];
+      const q = QUESTIONS[qIndex];
+      els.questionCount.textContent = `שאלה ${state.currentIndex + 1}`;
+      els.questionText.textContent = q.q;
+      els.answersBox.innerHTML = '';
+      q.a.forEach((answer, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'answer';
+        btn.textContent = answer;
+        btn.onclick = () => answerQuestion(idx, q.c, btn);
+        els.answersBox.appendChild(btn);
+      });
+    }
+
+    function lockAnswers(){
+      [...els.answersBox.children].forEach(btn => btn.classList.add('locked'));
+    }
+
+    function unlockNext(){
+      state.currentIndex += 1;
+      setTimeout(() => {
+        els.feedback.textContent = '';
+        els.feedback.className = 'feedback';
+        renderQuestion();
+      }, 500);
+    }
+
+    function answerQuestion(selected, correct, btn){
+      if(state.gameOver) return;
+      lockAnswers();
+      const buttons = [...els.answersBox.children];
+      buttons[correct].classList.add('correct');
+      if(selected === correct){
+        btn.classList.add('correct');
+        state.myScore += 1;
+        els.feedback.textContent = 'נכון! התקדמת צעד.';
+        els.feedback.className = 'feedback ok';
+        send({type:'progress', score:state.myScore});
+        updateScoreUI();
+        if(state.myScore >= GOAL){
+          finishGame(true);
+          send({type:'game-over'});
+          return;
+        }
+      } else {
+        btn.classList.add('wrong');
+        els.feedback.textContent = 'לא נכון. השאלה הבאה כבר בדרך.';
+        els.feedback.className = 'feedback no';
+      }
+      unlockNext();
+    }
+
+    function updateScoreUI(){
+      els.myScore.textContent = state.myScore;
+      els.opponentScore.textContent = state.opponentScore;
+      els.goalScore.textContent = GOAL;
+      moveRunner(els.runnerYou, state.myScore);
+      moveRunner(els.runnerOpponent, state.opponentScore);
+    }
+
+    function moveRunner(el, score){
+      const steps = GOAL;
+      const trackWidth = Math.max(220, document.getElementById('track').clientWidth - 88);
+      const progress = Math.min(score, steps) / steps;
+      const distance = trackWidth * progress;
+      el.style.transform = `translateX(-${distance}px)`;
+    }
+
+    function updateLabels(){
+      els.youLabel.textContent = state.myName || 'אתה';
+      els.opponentLabel.textContent = state.opponentName || 'יריב';
+      els.runnerYou.textContent = (state.myName || 'אתה').slice(0,4);
+      els.runnerOpponent.textContent = (state.opponentName || 'יריב').slice(0,4);
+    }
+
+    function finishGame(iWon){
+      state.gameOver = true;
+      const winnerName = iWon ? state.myName : state.opponentName;
+      els.winnerTitle.textContent = iWon ? 'ניצחת!' : `${winnerName} ניצח`;
+      els.winnerSub.textContent = iWon ? 'הגעת ראשון לקו הסיום.' : 'היריב הגיע ראשון לקו הסיום.';
+      els.winnerOverlay.classList.remove('hide');
+    }
+    function hideWinner(){ els.winnerOverlay.classList.add('hide'); }
+    function showLobby(){ els.lobby.classList.remove('hide'); els.game.classList.add('hide'); }
+    function showGame(){ els.lobby.classList.add('hide'); els.game.classList.remove('hide'); setTimeout(updateScoreUI,100); }
+    function send(payload){ if(state.conn && state.conn.open) state.conn.send(payload); }
+
+    els.createRoomBtn.onclick = () => {
+      if(!ensureName()) return;
+      state.isHost = true;
+      els.hostPanel.classList.remove('hide');
+      els.joinPanel.classList.add('hide');
+      initPeer(slugId());
+      setStatus('יוצר חדר חדש...');
+    };
+
+    els.joinFromLinkBtn.onclick = () => {
+      els.joinPanel.classList.toggle('hide');
+      els.hostPanel.classList.add('hide');
+      const room = new URLSearchParams(location.search).get('room');
+      if(room) els.roomIdInput.value = room;
+      setStatus('הזן קוד חדר או פתח דרך קישור הזמנה.');
+    };
+
+    els.joinRoomBtn.onclick = () => {
+      if(!ensureName()) return;
+      const roomId = (els.roomIdInput.value || '').trim() || new URLSearchParams(location.search).get('room');
+      if(!roomId){ setStatus('לא נמצא קוד חדר.'); return; }
+      state.isHost = false;
+      setStatus('מתחבר לחדר...');
+      initPeer();
+      state.peer.on('open', () => {
+        const conn = state.peer.connect(roomId, {reliable:true});
+        state.roomId = roomId;
+        attachConnection(conn);
+      });
+    };
+
+    els.copyInviteBtn.onclick = async () => {
+      const link = getInviteLink(state.roomId);
+      const text = link || state.roomId;
+      if(!text) return;
+      try{ await navigator.clipboard.writeText(text); setStatus(link ? 'קישור ההזמנה הועתק.' : 'קוד החדר הועתק.'); }
+      catch(e){ setStatus('לא הצלחתי להעתיק. אפשר לסמן ולהעתיק ידנית.'); }
+    };
+
+    els.shareWhatsappBtn.onclick = () => {
+      const link = els.inviteLinkBox.textContent.trim();
+      if(!link) return;
+      const text = encodeURIComponent(`בוא לשחק איתי דו-קרב טריוויה!\nהצטרף דרך הקישור:\n${link}`);
+      window.open(`https://wa.me/?text=${text}`, '_blank');
+    };
+
+    els.playAgainBtn.onclick = () => {
+      const seed = Date.now();
+      resetGame(seed);
+      state.started = true;
+      send({type:'play-again', seed});
+    };
+    els.backLobbyBtn.onclick = () => { location.href = location.pathname; };
+
+    window.addEventListener('resize', updateScoreUI);
+    window.addEventListener('load', () => {
+      els.goalScore.textContent = GOAL;
+      const room = new URLSearchParams(location.search).get('room');
+      if(room){
+        els.joinPanel.classList.remove('hide');
+        els.roomIdInput.value = room;
+        setStatus('זוהתה הזמנה. נשאר רק להזין שם ולהצטרף.');
+      } else if(!isHostedPage()) {
+        setStatus('כדי להזמין חבר דרך וואטסאפ בקובץ מקומי, שלחו לו את קוד החדר והוא יזין אותו במסך ההצטרפות.');
+      }
+      updateScoreUI();
+    });
+  </script>
+</body>
+</html>
