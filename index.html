@@ -254,7 +254,7 @@
         <div class="invite-box" id="roomCodeBox" style="margin-top:8px;background:#fff"></div>
         <div class="row" style="margin-top:12px">
           <button id="shareWhatsappBtn" class="btn-primary">שלח הזמנה בוואטסאפ</button>
-          <button id="copyInviteBtn" class="btn-secondary">העתק קישור</button>
+          <button id="copyInviteBtn" class="btn-secondary">העתק קישור / קוד</button>
         </div>
       </div>
 
@@ -269,6 +269,9 @@
       </div>
 
       <div class="status" id="lobbyStatus">מוכן להתחיל.</div>
+      <div class="invite-box" style="margin-top:12px;background:#fdfefe">
+        כדי שההזמנה בוואטסאפ תהיה לחיצה באמת, צריך להעלות את הקובץ לאתר כמו Netlify או GitHub Pages.
+      </div>
       <div class="tiny">אם המשחק פתוח כאתר רגיל יישלח קישור לחיץ. אם זה קובץ HTML מקומי, תישלח בוואטסאפ הזמנה עם קוד חדר, והשחקן השני יפתח את אותו קובץ ויזין את הקוד.</div>
     </section>
 
@@ -355,7 +358,8 @@
       gameOver:false,
       seed:0,
       order:[],
-      currentIndex:0
+      currentIndex:0,
+      inviteLink:''
     };
 
     const els = {
@@ -406,10 +410,11 @@
     }
     function updateInviteUI(roomId){
       const invite = getInviteLink(roomId);
+      state.inviteLink = invite;
       if(invite){
-        els.inviteLinkBox.textContent = `קישור הזמנה: ${invite}`;
+        els.inviteLinkBox.innerHTML = `קישור הזמנה:<br><a href="${invite}" target="_blank" rel="noopener noreferrer">${invite}</a>`;
       } else {
-        els.inviteLinkBox.textContent = 'הקובץ פתוח מקומית, לכן אי אפשר ליצור קישור לחיץ שעובד אצל המשתתף השני.';
+        els.inviteLinkBox.textContent = 'הקובץ פתוח מקומית, לכן אין קישור אינטרנטי לחיץ. אפשר לשלוח את קוד החדר לחבר.';
       }
       els.roomCodeBox.textContent = `קוד חדר: ${roomId}`;
     }
