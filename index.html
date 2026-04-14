@@ -1,111 +1,928 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Trivia Firebase</title>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-
-// 🔥 תדביק כאן את ה־config שלך מ-Firebase
-const firebaseConfig = {
-  apiKey: "// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyCBa0XIboAWJIeiH6Wqer74sSiMyRKfK2s",
-  authDomain: "game1-9d372.firebaseapp.com",
-  projectId: "game1-9d372",
-  storageBucket: "game1-9d372.firebasestorage.app",
-  messagingSenderId: "387028062033",
-  appId: "1:387028062033:web:7bf29040c7bb4b15d54d70"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);",
-  authDomain: "PASTE_AUTH_DOMAIN",
-  databaseURL: "PASTE_DATABASE_URL",
-  projectId: "PASTE_PROJECT_ID",
-  storageBucket: "PASTE_STORAGE_BUCKET",
-  messagingSenderId: "PASTE_SENDER_ID",
-  appId: "PASTE_APP_ID"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-
-// ====== לוגיקה פשוטה למשחק ======
-let room = "";
-let player = "p_" + Math.random().toString(36).slice(2,7);
-
-window.createRoom = function(){
-  room = Math.floor(100000 + Math.random()*900000).toString();
-  set(ref(db, "rooms/"+room), {
-    players: {[player]: true},
-    question: "כמה זה 2+2?",
-    answers: {}
-  });
-  startListen();
-  alert("קוד חדר: " + room);
-}
-
-window.joinRoom = function(){
-  room = document.getElementById("roomInput").value;
-  update(ref(db, "rooms/"+room+"/players"), {
-    [player]: true
-  });
-  startListen();
-}
-
-function startListen(){
-  document.getElementById("game").style.display="block";
-  onValue(ref(db, "rooms/"+room), (snap)=>{
-    const data = snap.val();
-    if(!data) return;
-
-    document.getElementById("question").innerText = data.question;
-
-    const answersDiv = document.getElementById("answers");
-    answersDiv.innerHTML = "";
-
-    ["3","4","5"].forEach((a,i)=>{
-      const btn = document.createElement("button");
-      btn.innerText = a;
-      btn.onclick = ()=>{
-        update(ref(db, "rooms/"+room+"/answers"), {
-          [player]: a
-        });
-      };
-      answersDiv.appendChild(btn);
-    });
-
-    document.getElementById("status").innerText =
-      JSON.stringify(data.answers);
-  });
-}
-</script>
-
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>מרוץ טריוויה - 2 שחקנים</title>
+  <style>
+    :root{
+      --bg:#f5f7fb;
+      --card:#ffffff;
+      --text:#172033;
+      --muted:#6b7485;
+      --line:#e7ebf3;
+      --primary:#3a6ff7;
+      --primary-2:#2d5de0;
+      --good:#1e9c5e;
+      --bad:#d94c4c;
+      --soft:#eef3ff;
+      --shadow:0 18px 45px rgba(25, 39, 74, 0.08);
+      --radius:22px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Arial,Helvetica,sans-serif;
+      background:linear-gradient(180deg,#f8faff 0%,#eef3fb 100%);
+      color:var(--text);
+      min-height:100vh;
+    }
+    .wrap{max-width:760px;margin:0 auto;padding:18px 14px 40px}
+    .app-title{
+      text-align:center;
+      font-size:clamp(28px,5vw,40px);
+      font-weight:800;
+      margin:14px 0 8px;
+      letter-spacing:-0.02em;
+    }
+    .subtitle{text-align:center;color:var(--muted);margin:0 0 20px;font-size:15px}
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:18px;
+      margin-bottom:14px;
+    }
+    .hidden{display:none !important}
+    h2,h3,p{margin:0}
+    .section-title{font-size:21px;font-weight:800;margin-bottom:8px}
+    .section-sub{color:var(--muted);font-size:14px;line-height:1.5;margin-bottom:16px}
+    input,button{
+      font:inherit;
+    }
+    input{
+      width:100%;padding:15px 16px;border-radius:16px;border:1px solid var(--line);background:#fff;color:var(--text);
+      outline:none;
+    }
+    input:focus{border-color:#b8c8ff;box-shadow:0 0 0 4px rgba(58,111,247,.10)}
+    .btns{display:grid;gap:10px}
+    .btn{
+      border:none;border-radius:16px;padding:15px 16px;font-weight:800;cursor:pointer;transition:.18s transform,.18s opacity,.18s background;
+    }
+    .btn:active{transform:scale(.985)}
+    .btn-primary{background:var(--primary);color:#fff}
+    .btn-primary:hover{background:var(--primary-2)}
+    .btn-secondary{background:#eef2fb;color:var(--text)}
+    .btn-ghost{background:#fff;border:1px solid var(--line);color:var(--text)}
+    .btn-good{background:var(--good);color:#fff}
+    .inline{display:flex;gap:10px;flex-wrap:wrap}
+    .inline > *{flex:1 1 180px}
+    .pill{display:inline-flex;align-items:center;gap:8px;background:var(--soft);color:var(--primary);padding:10px 14px;border-radius:999px;font-weight:800;font-size:13px}
+    .code-box,.link-box{
+      margin-top:12px;background:#f8faff;border:1px dashed #ccd7fa;padding:14px;border-radius:16px;word-break:break-all
+    }
+    .big-code{font-size:26px;font-weight:900;letter-spacing:.12em;text-align:center}
+    .players{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px}
+    .player-card{background:#f8faff;border:1px solid var(--line);border-radius:18px;padding:14px}
+    .player-name{font-weight:800;font-size:16px;margin-bottom:8px}
+    .player-meta{color:var(--muted);font-size:13px}
+    .player-status{margin-top:10px;font-size:13px;font-weight:800}
+    .status-on{color:var(--good)}
+    .status-off{color:var(--muted)}
+    .top-game{display:grid;gap:12px}
+    .score-row{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center}
+    .mini-card{background:#f8faff;border:1px solid var(--line);border-radius:18px;padding:12px}
+    .mini-name{font-weight:800;font-size:15px;margin-bottom:8px}
+    .mini-score{font-size:13px;color:var(--muted);line-height:1.6}
+    .center-box{text-align:center}
+    .timer-ring{
+      width:92px;height:92px;border-radius:50%;margin:0 auto 6px;background:conic-gradient(var(--primary) 100%, #e6ecff 0);
+      display:grid;place-items:center;
+    }
+    .timer-inner{width:74px;height:74px;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:26px;font-weight:900}
+    .track-wrap{display:grid;grid-template-columns:1fr;gap:10px;margin-top:4px}
+    .track-title{font-weight:800;margin-bottom:8px}
+    .track{
+      background:#f8faff;border:1px solid var(--line);border-radius:999px;padding:10px;position:relative;overflow:hidden
+    }
+    .track-line{
+      height:16px;border-radius:999px;background:linear-gradient(90deg,#edf2ff 0%,#eff7f4 100%);position:relative
+    }
+    .runner{
+      width:28px;height:28px;border-radius:50%;position:absolute;top:50%;transform:translate(-50%,-50%);
+      display:grid;place-items:center;font-size:15px;font-weight:900;background:#fff;border:2px solid var(--primary);box-shadow:0 8px 18px rgba(58,111,247,.18);
+      transition:left .35s ease;
+    }
+    .runner.opponent{border-color:var(--good);box-shadow:0 8px 18px rgba(30,156,94,.18)}
+    .finish{position:absolute;left:calc(100% - 18px);top:50%;transform:translateY(-50%);font-size:18px}
+    .question-box{margin-top:16px}
+    .question-index{color:var(--primary);font-weight:800;font-size:13px;margin-bottom:8px}
+    .question-text{font-size:24px;font-weight:900;line-height:1.4;margin-bottom:14px}
+    .answers{display:grid;gap:10px}
+    .answer{
+      text-align:right;padding:15px 16px;border-radius:18px;border:1px solid var(--line);background:#fff;cursor:pointer;font-weight:700;
+      transition:.18s transform,.18s background,.18s border-color;
+    }
+    .answer:hover{transform:translateY(-1px);border-color:#c7d5ff}
+    .answer.correct{background:#effaf4;border-color:#c7ecd8;color:#13663d}
+    .answer.wrong{background:#fff1f1;border-color:#f0c9c9;color:#9f2d2d}
+    .answer.locked{pointer-events:none;opacity:.8}
+    .notice{margin-top:12px;padding:12px 14px;border-radius:15px;background:#f8faff;border:1px solid var(--line);font-size:14px;color:var(--muted)}
+    .result-title{text-align:center;font-size:28px;font-weight:900;margin-bottom:10px}
+    .result-sub{text-align:center;color:var(--muted);line-height:1.6;margin-bottom:18px}
+    .wins-box{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
+    .setup-overlay{position:fixed;inset:0;background:rgba(16,22,38,.58);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50}
+    .setup-box{max-width:720px;background:#fff;border-radius:24px;padding:22px;border:1px solid var(--line);box-shadow:var(--shadow)}
+    .setup-box h3{font-size:24px;font-weight:900;margin-bottom:10px}
+    .setup-box p{color:var(--muted);line-height:1.7;margin-bottom:10px}
+    .setup-box code{background:#f3f6ff;padding:2px 6px;border-radius:8px}
+    .steps{margin:12px 0 0;padding-right:18px;color:var(--text);line-height:1.9}
+    .countdown{font-size:42px;font-weight:900;text-align:center;margin:6px 0}
+    .muted{text-align:center;color:var(--muted)}
+    @media (max-width:560px){
+      .question-text{font-size:21px}
+      .score-row{grid-template-columns:1fr}
+      .players,.wins-box{grid-template-columns:1fr}
+      .timer-ring{width:82px;height:82px}
+      .timer-inner{width:66px;height:66px;font-size:23px}
+      .wrap{padding:12px 10px 32px}
+    }
+  </style>
 </head>
-<body style="font-family:Arial;text-align:center">
+<body>
+  <div class="wrap">
+    <div class="app-title">מרוץ טריוויה</div>
+    <p class="subtitle">משחק תחרותי פשוט ל־2 שחקנים. נכנסים, מזמינים, ומתחילים.</p>
 
-<h2>משחק טריוויה Firebase</h2>
+    <section id="screen-home" class="card">
+      <h2 class="section-title">כניסה למשחק</h2>
+      <p class="section-sub">כתוב שם, צור חדר חדש או הצטרף עם קוד/קישור.</p>
+      <div class="btns">
+        <input id="playerName" type="text" maxlength="20" placeholder="השם שלך" />
+      </div>
+      <div class="inline" style="margin-top:12px">
+        <button class="btn btn-primary" id="createRoomBtn">צור משחק חדש</button>
+        <button class="btn btn-secondary" id="showJoinBtn">יש לי קוד חדר</button>
+      </div>
+      <div id="joinPanel" class="hidden" style="margin-top:12px">
+        <input id="roomCodeInput" type="text" maxlength="6" placeholder="הכנס קוד חדר" />
+        <button class="btn btn-ghost" id="joinRoomBtn" style="margin-top:10px;width:100%">הצטרף לחדר</button>
+      </div>
+    </section>
 
-<button onclick="createRoom()">צור משחק</button>
-<br><br>
+    <section id="screen-invite" class="card hidden">
+      <div class="pill">נוצר חדר חדש</div>
+      <h2 class="section-title" style="margin-top:12px">שלח הזמנה לחבר</h2>
+      <p class="section-sub">שלח את הקישור או את קוד החדר. אתה נשאר כאן ומחכה עד שהשחקן השני ייכנס.</p>
+      <div class="code-box">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:6px">קוד חדר</div>
+        <div id="roomCodeLabel" class="big-code">------</div>
+      </div>
+      <div class="link-box">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:6px">קישור הזמנה</div>
+        <a id="inviteLink" href="#" target="_blank" rel="noopener">—</a>
+      </div>
+      <div class="inline" style="margin-top:12px">
+        <button class="btn btn-primary" id="whatsappBtn">שלח בוואטסאפ</button>
+        <button class="btn btn-secondary" id="copyInviteBtn">העתק קישור</button>
+      </div>
+      <div class="players">
+        <div class="player-card">
+          <div class="player-name" id="hostNameWait">שחקן 1</div>
+          <div class="player-meta">יוצר החדר</div>
+          <div class="player-status status-on">מחובר</div>
+        </div>
+        <div class="player-card">
+          <div class="player-name" id="guestNameWait">ממתין לשחקן נוסף…</div>
+          <div class="player-meta">שחקן 2</div>
+          <div class="player-status status-off" id="guestWaitStatus">עדיין לא נכנס</div>
+        </div>
+      </div>
+    </section>
 
-<input id="roomInput" placeholder="קוד חדר">
-<button onclick="joinRoom()">הצטרף</button>
+    <section id="screen-join-link" class="card hidden">
+      <div class="pill">הוזמנת לחדר</div>
+      <h2 class="section-title" style="margin-top:12px">הצטרפות לחדר</h2>
+      <p class="section-sub">הגעת מקישור הזמנה. כתוב שם ולחץ על הכפתור כדי להצטרף מיד.</p>
+      <div class="code-box">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:6px">קוד חדר</div>
+        <div id="autoJoinRoomCode" class="big-code">------</div>
+      </div>
+      <input id="playerNameJoinLink" type="text" maxlength="20" placeholder="השם שלך" style="margin-top:12px" />
+      <button class="btn btn-primary" id="joinFromLinkBtn" style="margin-top:12px;width:100%">הצטרף עכשיו לחדר</button>
+    </section>
 
-<div id="game" style="display:none;margin-top:20px">
-  <h3 id="question"></h3>
-  <div id="answers"></div>
-  <p id="status"></p>
-</div>
+    <section id="screen-wait-start" class="card hidden">
+      <h2 class="section-title">שני השחקנים בפנים</h2>
+      <p class="section-sub">מיד מתחילים. ברגע שהמשחק מתחיל, כל אחד יקבל את אותה שאלה באותו זמן.</p>
+      <div class="players">
+        <div class="player-card">
+          <div class="player-name" id="waitP1">שחקן 1</div>
+          <div class="player-meta">מוכן</div>
+          <div class="player-status status-on">מחובר</div>
+        </div>
+        <div class="player-card">
+          <div class="player-name" id="waitP2">שחקן 2</div>
+          <div class="player-meta">מוכן</div>
+          <div class="player-status status-on">מחובר</div>
+        </div>
+      </div>
+      <div class="countdown" id="countdownText">3</div>
+      <div class="muted">המשחק מתחיל…</div>
+    </section>
 
+    <section id="screen-game" class="card hidden">
+      <div class="top-game">
+        <div class="score-row">
+          <div class="mini-card">
+            <div class="mini-name" id="meNameTop">אני</div>
+            <div class="mini-score">ניצחונות: <span id="meWinsTop">0</span><br>התקדמות: <span id="meProgressTop">0</span>/10</div>
+          </div>
+          <div class="center-box">
+            <div class="timer-ring" id="timerRing"><div class="timer-inner" id="timerText">12</div></div>
+            <div class="pill" id="roundBadge">סבב 1</div>
+          </div>
+          <div class="mini-card">
+            <div class="mini-name" id="opponentNameTop">יריב</div>
+            <div class="mini-score">ניצחונות: <span id="opWinsTop">0</span><br>התקדמות: <span id="opProgressTop">0</span>/10</div>
+          </div>
+        </div>
+
+        <div class="track-wrap">
+          <div>
+            <div class="track-title" id="myTrackTitle">אני</div>
+            <div class="track">
+              <div class="track-line"></div>
+              <div class="finish">🏁</div>
+              <div class="runner" id="myRunner" style="left:0%">א</div>
+            </div>
+          </div>
+          <div>
+            <div class="track-title" id="opTrackTitle">יריב</div>
+            <div class="track">
+              <div class="track-line"></div>
+              <div class="finish">🏁</div>
+              <div class="runner opponent" id="opRunner" style="left:0%">ב</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="question-box">
+        <div class="question-index" id="questionIndex">שאלה 1</div>
+        <div class="question-text" id="questionText">טוען שאלה…</div>
+        <div class="answers" id="answersBox"></div>
+        <div class="notice" id="noticeBox">הראשון שעונה נכון מקבל צעד נוסף.</div>
+      </div>
+    </section>
+
+    <section id="screen-result" class="card hidden">
+      <div class="result-title" id="resultTitle">יש מנצח</div>
+      <div class="result-sub" id="resultSub">הסבב הסתיים. אפשר להתחיל סבב נוסף.</div>
+      <div class="wins-box">
+        <div class="player-card">
+          <div class="player-name" id="resultMeName">אני</div>
+          <div class="player-meta">ניצחונות: <span id="resultMeWins">0</span></div>
+        </div>
+        <div class="player-card">
+          <div class="player-name" id="resultOpName">יריב</div>
+          <div class="player-meta">ניצחונות: <span id="resultOpWins">0</span></div>
+        </div>
+      </div>
+      <button class="btn btn-primary hidden" id="nextRoundBtn" style="width:100%;margin-top:16px">התחל סבב נוסף</button>
+      <div class="notice" id="resultNotice">ממתינים למארח להתחיל סבב חדש…</div>
+    </section>
+  </div>
+
+  <div id="setupOverlay" class="setup-overlay hidden">
+    <div class="setup-box">
+      <h3>צריך לחבר Firebase פעם אחת</h3>
+      <p>הקובץ כבר כמעט מוכן. הכנסתי לך את רוב פרטי הפרויקט, ונשאר רק למלא את <code>databaseURL</code> בתוך <code>FIREBASE_CONFIG</code>.</p>
+      <p>אחרי שממלאים את ההגדרות ומעלים את הקובץ ל־Firebase Hosting / Netlify / GitHub Pages, ההזמנה בוואטסאפ תהיה לחיצה אחת ותעבוד נכון.</p>
+      <ol class="steps">
+        <li>פתח Firebase Console וצור פרויקט חדש.</li>
+        <li>הפעל Realtime Database במצב test.</li>
+        <li>הוסף Web App והעתק את כתובת ה־Realtime Database.</li>
+        <li>חפש בקובץ את <code>PASTE_YOUR_DATABASE_URL</code> והדבק שם את הכתובת האמיתית.</li>
+        <li>אחסן את הקובץ אונליין ופתח את הכתובת משם, כדי שהקישור בוואטסאפ יהיה לחיץ.</li>
+      </ol>
+      <button class="btn btn-primary" id="closeSetupBtn" style="width:100%;margin-top:14px">הבנתי</button>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script>
+    const FIREBASE_CONFIG = {
+      apiKey: "AIzaSyCBa0XIboAWJIeiH6Wqer74sSiMyRKfK2s",
+      authDomain: "game1-9d372.firebaseapp.com",
+      databaseURL: "https://game1-9d372-default-rtdb.firebaseio.com/
+",
+      projectId: "game1-9d372",
+      storageBucket: "game1-9d372.firebasestorage.app",
+      messagingSenderId: "387028062033",
+      appId: "1:387028062033:web:7bf29040c7bb4b15d54d70"
+    };
+
+    const QUESTIONS = [
+      {q:"מהי בירת צרפת?", a:["רומא","פריז","ברלין"], c:1},
+      {q:"כמה ימים יש בשבוע?", a:["7","8","6"], c:0},
+      {q:"איזה כוכב הוא הקרוב ביותר לשמש?", a:["כדור הארץ","נוגה","חמה"], c:2},
+      {q:"כמה פאות יש לריבוע?", a:["3","4","5"], c:1},
+      {q:"איזו חיה נחשבת למלך החיות?", a:["אריה","פיל","זאב"], c:0},
+      {q:"מהו הצבע שמתקבל מערבוב כחול וצהוב?", a:["ירוק","אדום","סגול"], c:0},
+      {q:"כמה חודשים יש בשנה?", a:["10","11","12"], c:2},
+      {q:"מהו האוקיינוס הגדול בעולם?", a:["האטלנטי","השקט","ההודי"], c:1},
+      {q:"איזו יבשת היא הגדולה ביותר?", a:["אירופה","אסיה","אפריקה"], c:1},
+      {q:"כמה דקות יש בשעה?", a:["60","30","90"], c:0},
+      {q:"איזה מכשיר מציג זמן?", a:["שעון","מקרר","מחברת"], c:0},
+      {q:"איזו עונה באה אחרי האביב?", a:["חורף","קיץ","סתיו"], c:1}
+    ];
+
+    const FINISH_STEPS = 10;
+    const QUESTION_TIME = 12;
+    const screens = {
+      home: document.getElementById('screen-home'),
+      invite: document.getElementById('screen-invite'),
+      joinLink: document.getElementById('screen-join-link'),
+      waitStart: document.getElementById('screen-wait-start'),
+      game: document.getElementById('screen-game'),
+      result: document.getElementById('screen-result')
+    };
+
+    const els = {
+      playerName: document.getElementById('playerName'),
+      createRoomBtn: document.getElementById('createRoomBtn'),
+      showJoinBtn: document.getElementById('showJoinBtn'),
+      joinPanel: document.getElementById('joinPanel'),
+      roomCodeInput: document.getElementById('roomCodeInput'),
+      joinRoomBtn: document.getElementById('joinRoomBtn'),
+      roomCodeLabel: document.getElementById('roomCodeLabel'),
+      inviteLink: document.getElementById('inviteLink'),
+      whatsappBtn: document.getElementById('whatsappBtn'),
+      copyInviteBtn: document.getElementById('copyInviteBtn'),
+      hostNameWait: document.getElementById('hostNameWait'),
+      guestNameWait: document.getElementById('guestNameWait'),
+      guestWaitStatus: document.getElementById('guestWaitStatus'),
+      autoJoinRoomCode: document.getElementById('autoJoinRoomCode'),
+      playerNameJoinLink: document.getElementById('playerNameJoinLink'),
+      joinFromLinkBtn: document.getElementById('joinFromLinkBtn'),
+      waitP1: document.getElementById('waitP1'),
+      waitP2: document.getElementById('waitP2'),
+      countdownText: document.getElementById('countdownText'),
+      meNameTop: document.getElementById('meNameTop'),
+      meWinsTop: document.getElementById('meWinsTop'),
+      meProgressTop: document.getElementById('meProgressTop'),
+      opponentNameTop: document.getElementById('opponentNameTop'),
+      opWinsTop: document.getElementById('opWinsTop'),
+      opProgressTop: document.getElementById('opProgressTop'),
+      roundBadge: document.getElementById('roundBadge'),
+      myRunner: document.getElementById('myRunner'),
+      opRunner: document.getElementById('opRunner'),
+      myTrackTitle: document.getElementById('myTrackTitle'),
+      opTrackTitle: document.getElementById('opTrackTitle'),
+      timerRing: document.getElementById('timerRing'),
+      timerText: document.getElementById('timerText'),
+      questionIndex: document.getElementById('questionIndex'),
+      questionText: document.getElementById('questionText'),
+      answersBox: document.getElementById('answersBox'),
+      noticeBox: document.getElementById('noticeBox'),
+      resultTitle: document.getElementById('resultTitle'),
+      resultSub: document.getElementById('resultSub'),
+      resultMeName: document.getElementById('resultMeName'),
+      resultMeWins: document.getElementById('resultMeWins'),
+      resultOpName: document.getElementById('resultOpName'),
+      resultOpWins: document.getElementById('resultOpWins'),
+      nextRoundBtn: document.getElementById('nextRoundBtn'),
+      resultNotice: document.getElementById('resultNotice'),
+      setupOverlay: document.getElementById('setupOverlay'),
+      closeSetupBtn: document.getElementById('closeSetupBtn')
+    };
+
+    let app, db, roomsRef;
+    let roomCode = null;
+    let playerId = localStorage.getItem('trivia_player_id') || crypto.randomUUID();
+    localStorage.setItem('trivia_player_id', playerId);
+    let myName = localStorage.getItem('trivia_player_name') || '';
+    let isHost = false;
+    let roomListener = null;
+    let roomState = null;
+    let countdownInterval = null;
+    let timerInterval = null;
+    let currentQuestionKey = null;
+
+    function isFirebaseConfigured() {
+      return FIREBASE_CONFIG.apiKey && !FIREBASE_CONFIG.apiKey.includes('PASTE_YOUR');
+    }
+
+    function initFirebase() {
+      if (!isFirebaseConfigured()) {
+        els.setupOverlay.classList.remove('hidden');
+        return false;
+      }
+      try {
+        app = firebase.initializeApp(FIREBASE_CONFIG);
+        db = firebase.database();
+        roomsRef = db.ref('trivia_rooms');
+        return true;
+      } catch (e) {
+        console.error(e);
+        els.setupOverlay.classList.remove('hidden');
+        return false;
+      }
+    }
+
+    function showScreen(name) {
+      Object.values(screens).forEach(s => s.classList.add('hidden'));
+      screens[name].classList.remove('hidden');
+    }
+
+    function sanitizeName(name) {
+      return (name || '').trim().replace(/\s+/g, ' ').slice(0, 20);
+    }
+
+    function getEnteredName() {
+      return sanitizeName(els.playerName.value || els.playerNameJoinLink.value || myName);
+    }
+
+    function setNameEverywhere(name) {
+      myName = sanitizeName(name);
+      localStorage.setItem('trivia_player_name', myName);
+      els.playerName.value = myName;
+      els.playerNameJoinLink.value = myName;
+    }
+
+    function generateRoomCode() {
+      return Math.random().toString(36).slice(2, 8).toUpperCase();
+    }
+
+    function inviteUrl(code) {
+      if (window.location.protocol === 'file:') return '';
+      const url = new URL(window.location.href);
+      url.searchParams.set('room', code);
+      return url.toString();
+    }
+
+    function pickQuestions(count=7) {
+      const shuffled = [...QUESTIONS].sort(() => Math.random() - 0.5);
+      return shuffled.slice(0, count);
+    }
+
+    function playerEntries(room) {
+      return Object.entries(room.players || {});
+    }
+
+    function myPlayer(room) {
+      return room?.players?.[playerId] || null;
+    }
+
+    function otherPlayer(room) {
+      const entries = playerEntries(room).filter(([id]) => id !== playerId);
+      return entries[0] ? { id: entries[0][0], ...entries[0][1] } : null;
+    }
+
+    async function createRoom() {
+      const name = sanitizeName(els.playerName.value);
+      if (!name) return alert('כתוב שם קודם');
+      setNameEverywhere(name);
+      roomCode = generateRoomCode();
+      isHost = true;
+      const roomData = {
+        code: roomCode,
+        createdAt: Date.now(),
+        status: 'waiting',
+        hostId: playerId,
+        countdownStartAt: null,
+        round: 1,
+        players: {
+          [playerId]: {
+            id: playerId,
+            name,
+            joinedAt: Date.now(),
+            online: true,
+            wins: 0,
+            progress: 0
+          }
+        },
+        game: null
+      };
+      await roomsRef.child(roomCode).set(roomData);
+      listenRoom(roomCode);
+      renderInvite(roomData);
+      showScreen('invite');
+    }
+
+    async function joinRoomByCode(code, name) {
+      const cleanCode = (code || '').trim().toUpperCase();
+      const cleanName = sanitizeName(name);
+      if (!cleanName) return alert('כתוב שם קודם');
+      if (!cleanCode) return alert('הכנס קוד חדר');
+      setNameEverywhere(cleanName);
+      roomCode = cleanCode;
+      const roomSnap = await roomsRef.child(roomCode).get();
+      if (!roomSnap.exists()) return alert('החדר לא נמצא');
+      const room = roomSnap.val();
+      const existingPlayers = playerEntries(room);
+      const alreadyInside = !!room.players?.[playerId];
+      if (existingPlayers.length >= 2 && !alreadyInside) return alert('החדר כבר מלא');
+      isHost = room.hostId === playerId;
+      await roomsRef.child(roomCode).child('players').child(playerId).update({
+        id: playerId,
+        name: cleanName,
+        joinedAt: Date.now(),
+        online: true,
+        wins: room.players?.[playerId]?.wins || 0,
+        progress: room.players?.[playerId]?.progress || 0
+      });
+      listenRoom(roomCode);
+    }
+
+    function listenRoom(code) {
+      if (roomListener) roomsRef.child(roomCode).off('value', roomListener);
+      roomCode = code;
+      roomListener = async (snap) => {
+        if (!snap.exists()) {
+          alert('החדר נסגר');
+          location.href = location.pathname;
+          return;
+        }
+        roomState = snap.val();
+        await autoFlow(roomState);
+      };
+      roomsRef.child(roomCode).on('value', roomListener);
+      window.addEventListener('beforeunload', markOffline);
+    }
+
+    async function autoFlow(room) {
+      const me = myPlayer(room);
+      const opponent = otherPlayer(room);
+      if (!me) return;
+
+      if (room.status === 'waiting') {
+        renderInvite(room);
+        if (playerEntries(room).length === 2 && isHost) {
+          await startCountdown();
+          return;
+        }
+        if (window.location.search.includes('room=')) {
+          showScreen('invite');
+        } else {
+          showScreen('invite');
+        }
+      }
+
+      if (room.status === 'countdown') {
+        renderWaitStart(room);
+        showScreen('waitStart');
+        runCountdownVisual(room.countdownStartAt);
+      }
+
+      if (room.status === 'playing') {
+        clearCountdown();
+        showScreen('game');
+        renderGame(room);
+      }
+
+      if (room.status === 'round_end') {
+        clearTimer();
+        showScreen('result');
+        renderResult(room);
+      }
+    }
+
+    function renderInvite(room) {
+      els.roomCodeLabel.textContent = room.code;
+      const url = inviteUrl(room.code);
+      if (url) {
+        els.inviteLink.href = url;
+        els.inviteLink.textContent = url;
+      } else {
+        els.inviteLink.removeAttribute('href');
+        els.inviteLink.textContent = 'כדי לקבל קישור לחיץ צריך לאחסן את הקובץ אונליין. כרגע שלח את קוד החדר: ' + room.code;
+      }
+      const me = myPlayer(room);
+      const opponent = otherPlayer(room);
+      els.hostNameWait.textContent = room.players[room.hostId]?.name || me?.name || 'שחקן 1';
+      els.guestNameWait.textContent = opponent ? opponent.name : 'ממתין לשחקן נוסף…';
+      els.guestWaitStatus.textContent = opponent ? 'התחבר לחדר' : 'עדיין לא נכנס';
+      els.guestWaitStatus.className = 'player-status ' + (opponent ? 'status-on' : 'status-off');
+    }
+
+    function renderWaitStart(room) {
+      const entries = playerEntries(room).map(([id,p]) => ({id,...p}));
+      els.waitP1.textContent = entries[0]?.name || 'שחקן 1';
+      els.waitP2.textContent = entries[1]?.name || 'שחקן 2';
+    }
+
+    async function startCountdown() {
+      if (!isHost || !roomState || roomState.status !== 'waiting') return;
+      const questions = pickQuestions(7).map((item, idx) => ({...item, key: 'q' + idx}));
+      await roomsRef.child(roomCode).update({
+        status: 'countdown',
+        countdownStartAt: Date.now(),
+        game: {
+          questions,
+          currentIndex: 0,
+          questionStartedAt: null,
+          answers: {},
+          fastestCorrectPlayerId: null,
+          winnerId: null,
+          finishedAt: null
+        }
+      });
+      setTimeout(() => {
+        const currentRoom = roomState;
+        if (currentRoom && currentRoom.status === 'countdown' && isHost) startGame();
+      }, 3200);
+    }
+
+    function runCountdownVisual(startAt) {
+      clearCountdown();
+      const endAt = startAt + 3000;
+      const tick = () => {
+        const left = Math.max(0, endAt - Date.now());
+        const sec = Math.max(1, Math.ceil(left / 1000));
+        els.countdownText.textContent = left <= 0 ? '1' : String(sec);
+        if (left <= 0) clearCountdown();
+      };
+      tick();
+      countdownInterval = setInterval(tick, 150);
+    }
+
+    function clearCountdown() {
+      if (countdownInterval) clearInterval(countdownInterval);
+      countdownInterval = null;
+    }
+
+    async function startGame() {
+      if (!isHost) return;
+      await roomsRef.child(roomCode).child('game').update({
+        currentIndex: 0,
+        questionStartedAt: Date.now(),
+        answers: {},
+        fastestCorrectPlayerId: null,
+        winnerId: null,
+        finishedAt: null
+      });
+      await roomsRef.child(roomCode).update({status:'playing'});
+    }
+
+    function renderGame(room) {
+      const me = myPlayer(room);
+      const opponent = otherPlayer(room) || {name:'יריב',wins:0,progress:0};
+      const game = room.game;
+      const q = game.questions[game.currentIndex];
+      if (!q) return;
+
+      els.meNameTop.textContent = me.name;
+      els.opponentNameTop.textContent = opponent.name;
+      els.myTrackTitle.textContent = me.name;
+      els.opTrackTitle.textContent = opponent.name;
+      els.meWinsTop.textContent = me.wins || 0;
+      els.opWinsTop.textContent = opponent.wins || 0;
+      els.meProgressTop.textContent = me.progress || 0;
+      els.opProgressTop.textContent = opponent.progress || 0;
+      els.roundBadge.textContent = 'סבב ' + (room.round || 1);
+      moveRunner(els.myRunner, me.progress || 0);
+      moveRunner(els.opRunner, opponent.progress || 0);
+
+      els.questionIndex.textContent = `שאלה ${game.currentIndex + 1} מתוך ${game.questions.length}`;
+      els.questionText.textContent = q.q;
+      renderAnswers(q, room);
+      updateNotice(room);
+      runTimer(game.questionStartedAt);
+    }
+
+    function moveRunner(el, progress) {
+      const percent = Math.max(0, Math.min(100, (progress / FINISH_STEPS) * 100));
+      el.style.left = `calc(${percent}% + ${percent === 100 ? -8 : 0}px)`;
+    }
+
+    function renderAnswers(question, room) {
+      const meAnswer = room.game.answers?.[playerId];
+      const locked = !!meAnswer || room.status !== 'playing';
+      const fastestId = room.game.fastestCorrectPlayerId;
+      if (currentQuestionKey !== question.key) {
+        els.answersBox.innerHTML = '';
+        currentQuestionKey = question.key;
+      }
+      els.answersBox.innerHTML = '';
+      question.a.forEach((ans, index) => {
+        const btn = document.createElement('button');
+        btn.className = 'answer' + (locked ? ' locked' : '');
+        btn.textContent = ans;
+        if (meAnswer) {
+          if (index === question.c) btn.classList.add('correct');
+          if (meAnswer.choice === index && index !== question.c) btn.classList.add('wrong');
+        }
+        btn.onclick = () => submitAnswer(index);
+        els.answersBox.appendChild(btn);
+      });
+    }
+
+    function updateNotice(room) {
+      const game = room.game;
+      const meAnswer = game.answers?.[playerId];
+      if (!meAnswer) {
+        els.noticeBox.textContent = 'הראשון שעונה נכון מקבל צעד נוסף.';
+        return;
+      }
+      const isCorrect = meAnswer.choice === game.questions[game.currentIndex].c;
+      const gotBonus = game.fastestCorrectPlayerId === playerId && isCorrect;
+      els.noticeBox.textContent = isCorrect
+        ? (gotBonus ? 'נכון. קיבלת גם בונוס מהירות.' : 'נכון. התקדמת צעד אחד.')
+        : 'לא נכון. בשאלה הבאה אפשר להשיג את היריב.';
+    }
+
+    function runTimer(startAt) {
+      clearTimer();
+      const finishAt = startAt + QUESTION_TIME * 1000;
+      const tick = () => {
+        const leftMs = Math.max(0, finishAt - Date.now());
+        const seconds = Math.ceil(leftMs / 1000);
+        const pct = Math.max(0, Math.min(100, (leftMs / (QUESTION_TIME * 1000)) * 100));
+        els.timerText.textContent = seconds;
+        els.timerRing.style.background = `conic-gradient(var(--primary) ${pct}%, #e6ecff ${pct}% 100%)`;
+        if (leftMs <= 0) clearTimer();
+      };
+      tick();
+      timerInterval = setInterval(tick, 120);
+    }
+
+    function clearTimer() {
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = null;
+    }
+
+    async function submitAnswer(choiceIndex) {
+      if (!roomState || roomState.status !== 'playing') return;
+      const game = roomState.game;
+      if (game.answers?.[playerId]) return;
+      const question = game.questions[game.currentIndex];
+      const isCorrect = choiceIndex === question.c;
+      const updates = {};
+      updates[`game/answers/${playerId}`] = {
+        choice: choiceIndex,
+        answeredAt: Date.now(),
+        correct: isCorrect
+      };
+      if (isCorrect && !game.fastestCorrectPlayerId) {
+        updates['game/fastestCorrectPlayerId'] = playerId;
+      }
+      await roomsRef.child(roomCode).update(updates);
+      setTimeout(checkAdvanceQuestion, 350);
+    }
+
+    async function checkAdvanceQuestion() {
+      const snap = await roomsRef.child(roomCode).get();
+      if (!snap.exists()) return;
+      const room = snap.val();
+      if (!isHost || room.status !== 'playing') return;
+      const game = room.game;
+      const players = playerEntries(room);
+      const allAnswered = players.every(([pid]) => !!game.answers?.[pid]);
+      const timedOut = Date.now() >= (game.questionStartedAt + QUESTION_TIME * 1000 + 100);
+      if (!allAnswered && !timedOut) return;
+
+      const question = game.questions[game.currentIndex];
+      const updates = {};
+      players.forEach(([pid, p]) => {
+        const ans = game.answers?.[pid];
+        let add = 0;
+        if (ans?.choice === question.c) add += 1;
+        if (game.fastestCorrectPlayerId === pid && ans?.choice === question.c) add += 1;
+        const current = room.players?.[pid]?.progress || 0;
+        updates[`players/${pid}/progress`] = Math.min(FINISH_STEPS, current + add);
+      });
+      await roomsRef.child(roomCode).update(updates);
+
+      const afterSnap = await roomsRef.child(roomCode).get();
+      const afterRoom = afterSnap.val();
+      const winnerEntry = playerEntries(afterRoom).find(([,p]) => (p.progress || 0) >= FINISH_STEPS);
+      if (winnerEntry) {
+        const winnerId = winnerEntry[0];
+        const currentWins = afterRoom.players[winnerId].wins || 0;
+        await roomsRef.child(roomCode).update({
+          [`players/${winnerId}/wins`]: currentWins + 1,
+          status: 'round_end',
+          'game/winnerId': winnerId,
+          'game/finishedAt': Date.now()
+        });
+        return;
+      }
+
+      const nextIndex = game.currentIndex + 1;
+      const questionPoolExhausted = nextIndex >= game.questions.length;
+      if (questionPoolExhausted) {
+        const entries = playerEntries(afterRoom);
+        entries.sort((a,b)=>(b[1].progress||0)-(a[1].progress||0));
+        const winnerId = entries[0][0];
+        const currentWins = afterRoom.players[winnerId].wins || 0;
+        await roomsRef.child(roomCode).update({
+          [`players/${winnerId}/wins`]: currentWins + 1,
+          status: 'round_end',
+          'game/winnerId': winnerId,
+          'game/finishedAt': Date.now()
+        });
+        return;
+      }
+
+      await roomsRef.child(roomCode).child('game').update({
+        currentIndex: nextIndex,
+        questionStartedAt: Date.now(),
+        answers: {},
+        fastestCorrectPlayerId: null
+      });
+    }
+
+    function renderResult(room) {
+      const me = myPlayer(room);
+      const opponent = otherPlayer(room) || {name:'יריב',wins:0};
+      const winnerId = room.game?.winnerId;
+      const winnerName = room.players?.[winnerId]?.name || 'יש מנצח';
+      els.resultTitle.textContent = winnerId === playerId ? 'ניצחת בסבב' : `${winnerName} ניצח בסבב`;
+      els.resultSub.textContent = `תוצאה כרגע: ${me.name} ${me.wins || 0} - ${opponent.wins || 0} ${opponent.name}`;
+      els.resultMeName.textContent = me.name;
+      els.resultOpName.textContent = opponent.name;
+      els.resultMeWins.textContent = me.wins || 0;
+      els.resultOpWins.textContent = opponent.wins || 0;
+      els.nextRoundBtn.classList.toggle('hidden', !isHost);
+      els.resultNotice.textContent = isHost ? 'כשתהיה מוכן, אפשר להתחיל סבב נוסף.' : 'ממתינים למארח להתחיל סבב חדש…';
+    }
+
+    async function startNextRound() {
+      if (!isHost || !roomState) return;
+      const updates = { status:'countdown', countdownStartAt: Date.now(), round:(roomState.round || 1) + 1 };
+      playerEntries(roomState).forEach(([pid]) => {
+        updates[`players/${pid}/progress`] = 0;
+      });
+      updates['game'] = {
+        questions: pickQuestions(7).map((item, idx) => ({...item, key:'r'+Date.now()+'q'+idx})),
+        currentIndex: 0,
+        questionStartedAt: null,
+        answers: {},
+        fastestCorrectPlayerId: null,
+        winnerId: null,
+        finishedAt: null
+      };
+      await roomsRef.child(roomCode).update(updates);
+      setTimeout(() => {
+        const currentRoom = roomState;
+        if (currentRoom && currentRoom.status === 'countdown' && isHost) startGame();
+      }, 3200);
+    }
+
+    async function markOffline() {
+      try {
+        if (roomCode && db) {
+          await roomsRef.child(roomCode).child('players').child(playerId).update({online:false});
+        }
+      } catch (e) {}
+    }
+
+    function setupActions() {
+      els.createRoomBtn.onclick = () => createRoom();
+      els.showJoinBtn.onclick = () => els.joinPanel.classList.toggle('hidden');
+      els.joinRoomBtn.onclick = () => joinRoomByCode(els.roomCodeInput.value, els.playerName.value);
+      els.joinFromLinkBtn.onclick = () => joinRoomByCode(roomCode, els.playerNameJoinLink.value);
+      els.nextRoundBtn.onclick = () => startNextRound();
+      els.copyInviteBtn.onclick = async () => {
+        const link = inviteUrl(roomCode);
+        const textToCopy = link
+          ? `בוא למשחק טריוויה מולי\nהצטרף כאן: ${link}\nקוד חדר: ${roomCode}`
+          : `בוא למשחק טריוויה מולי\nקוד חדר: ${roomCode}`;
+        await navigator.clipboard.writeText(textToCopy);
+        els.copyInviteBtn.textContent = 'הועתק';
+        setTimeout(()=> els.copyInviteBtn.textContent = 'העתק קישור', 1200);
+      };
+      els.whatsappBtn.onclick = () => {
+        const link = inviteUrl(roomCode);
+        const text = encodeURIComponent(
+          link
+            ? `בוא למשחק טריוויה מולי\nהצטרף כאן: ${link}\nקוד חדר: ${roomCode}`
+            : `בוא למשחק טריוויה מולי\nקוד חדר: ${roomCode}`
+        );
+        window.open(`https://wa.me/?text=${text}`, '_blank');
+      };
+      els.closeSetupBtn.onclick = () => els.setupOverlay.classList.add('hidden');
+    }
+
+    async function autoJoinFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const room = (params.get('room') || '').trim().toUpperCase();
+      if (!room) {
+        if (myName) els.playerName.value = myName;
+        showScreen('home');
+        return;
+      }
+      roomCode = room;
+      els.autoJoinRoomCode.textContent = room;
+      if (myName) els.playerNameJoinLink.value = myName;
+      showScreen('joinLink');
+    }
+
+    function boot() {
+      setupActions();
+      if (!initFirebase()) {
+        if (myName) els.playerName.value = myName;
+        autoJoinFromUrl();
+        return;
+      }
+      autoJoinFromUrl();
+    }
+
+    boot();
+  </script>
 </body>
 </html>
