@@ -399,6 +399,7 @@
     let roomState = null;
     let countdownInterval = null;
     let timerInterval = null;
+    let hostAdvanceTimeout = null;
     let currentQuestionKey = null;
 
     function isFirebaseConfigured() {
@@ -568,6 +569,10 @@
       }
 
       if (room.status === 'countdown') {
+        if (hostAdvanceTimeout) {
+          clearTimeout(hostAdvanceTimeout);
+          hostAdvanceTimeout = null;
+        }
         renderWaitStart(room);
         showScreen('waitStart');
         runCountdownVisual(room.countdownStartAt);
@@ -581,6 +586,10 @@
       }
 
       if (room.status === 'round_end') {
+        if (hostAdvanceTimeout) {
+          clearTimeout(hostAdvanceTimeout);
+          hostAdvanceTimeout = null;
+        }
         clearTimer();
         showScreen('result');
         renderResult(room);
@@ -698,8 +707,11 @@
     function renderAnswers(question, room) {
       const meAnswer = room.game.answers?.[playerId];
       const locked = !!meAnswer || room.status !== 'playing';
-      const fastestId = room.game.fastestCorrectPlayerId;
       if (currentQuestionKey !== question.key) {
+        if (hostAdvanceTimeout) {
+          clearTimeout(hostAdvanceTimeout);
+          hostAdvanceTimeout = null;
+        }
         els.answersBox.innerHTML = '';
         currentQuestionKey = question.key;
       }
@@ -779,13 +791,22 @@
       const game = room.game;
       if (!game || !game.questionStartedAt) return;
 
-      const now = Date.now();
-      const msLeft = (game.questionStartedAt + QUESTION_TIME * 1000 + 120) - now;
-      if (msLeft <= 0) {
-        setTimeout(checkAdvanceQuestion, 50);
-      } else {
-        setTimeout(checkAdvanceQuestion, msLeft);
+      const q = game.questions?.[game.currentIndex];
+      const qKey = q?.key || ('q_' + game.currentIndex);
+
+      if (hostAdvanceTimeout && currentQuestionKey === qKey) return;
+
+      if (hostAdvanceTimeout) {
+        clearTimeout(hostAdvanceTimeout);
+        hostAdvanceTimeout = null;
       }
+
+      const now = Date.now();
+      const msLeft = Math.max(50, (game.questionStartedAt + QUESTION_TIME * 1000 + 120) - now);
+      hostAdvanceTimeout = setTimeout(() => {
+        hostAdvanceTimeout = null;
+        checkAdvanceQuestion();
+      }, msLeft);
     }
 
     async function checkAdvanceQuestion() {
@@ -794,12 +815,14 @@
       const room = snap.val();
       if (!isHost || room.status !== 'playing') return;
       const game = room.game;
+      const question = game.questions?.[game.currentIndex];
+      if (!question) return;
+      if (currentQuestionKey && question.key !== currentQuestionKey) return;
       const players = playerEntries(room);
       const allAnswered = players.every(([pid]) => !!game.answers?.[pid]);
       const timedOut = Date.now() >= (game.questionStartedAt + QUESTION_TIME * 1000 + 100);
       if (!allAnswered && !timedOut) return;
 
-      const question = game.questions[game.currentIndex];
       const updates = {};
       players.forEach(([pid, p]) => {
         const ans = game.answers?.[pid];
