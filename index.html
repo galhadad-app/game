@@ -432,7 +432,7 @@
       <div class="hero-content">
         <div class="hero-badge">🎮 משחק מובייל • ⚡ מירוץ חי • 🏁 2 שחקנים</div>
         <div class="hero-title">מרוץ טריוויה</div>
-        <p class="hero-sub">ענה מהר, התקדם במסלול שלך, ועקוף את היריב. כל שחקן משחק בקצב שלו בלי להיתקע על הקצב של המשתתף השני.</p>
+        <p class="hero-sub">ענה מהר, התקדם במסלול שלך, ועקוף את היריב. יש חוק ניצחון אחד בלבד: הראשון שמגיע ל־10 תשובות נכונות מנצח מיד.</p>
         <div class="hero-stats hero-stats-bar">
           <div class="stat-box">
             <div class="stat-num">10</div>
@@ -572,7 +572,7 @@
         </div>
       </div>
       <button class="btn btn-primary hidden" id="nextRoundBtn" style="width:100%;margin-top:16px">התחל סבב נוסף 🚀</button>
-      <div class="notice" id="resultNotice">ממתינים למארח להתחיל סבב חדש…</div>
+      <div class="notice" id="resultNotice">ממתינים למארח להתחיל מירוץ חדש…</div>
     </section>
   </div>
 
@@ -761,7 +761,7 @@
 
     function getQuestionForPlayer(player) {
       const idx = player?.questionIndex || 0;
-      return QUESTIONS[idx] || null;
+      return QUESTIONS[idx % QUESTIONS.length];
     }
 
     function moveRunner(el, progress) {
@@ -998,18 +998,7 @@
       moveRunner(els.myRunner, me.progress || 0);
       moveRunner(els.opRunner, opponent.progress || 0);
 
-      if (!myQuestion) {
-        els.questionIndex.textContent = 'סיום';
-        els.questionText.textContent = 'סיימת את כל השאלות. ממתינים לסיום הסבב...';
-        els.answersBox.innerHTML = '';
-        els.noticeBox.textContent = 'כאן כבר אין עוד שאלות עבורך. עכשיו מחכים לניצחון או לסיום הסבב.';
-        clearQuestionTimer();
-        els.timerText.textContent = '0';
-        els.timerRing.style.background = 'conic-gradient(var(--primary) 0%, #e6ecff 0% 100%)';
-        return;
-      }
-
-      els.questionIndex.textContent = `🧠 שאלה ${(me.questionIndex || 0) + 1} מתוך ${QUESTIONS.length}`;
+      els.questionIndex.textContent = `🧠 שאלה ${(me.questionIndex || 0) + 1}`;
       els.questionText.textContent = myQuestion.q;
       renderAnswers(me, myQuestion);
       updateNotice(me, opponent, myQuestion);
@@ -1043,7 +1032,7 @@
       const alreadyAnswered = me.lastAnsweredQuestionIndex === me.questionIndex;
       els.noticeBox.className = 'notice';
       if (!alreadyAnswered) {
-        els.noticeBox.textContent = `אתה בשאלה ${(me.questionIndex || 0) + 1}. תשובה נכונה תקדם אותך צעד אחד. היריב כרגע על שאלה ${(opponent.questionIndex || 0) + 1}, אז כל שנייה חשובה.`;
+        els.noticeBox.textContent = `אתה בשאלה ${(me.questionIndex || 0) + 1}. תשובה נכונה תקדם אותך צעד אחד. הראשון שמגיע ל־10 תשובות נכונות מנצח מיד. היריב כרגע על שאלה ${(opponent.questionIndex || 0) + 1}.`;
         return;
       }
 
@@ -1100,36 +1089,6 @@
         updates['winnerId'] = playerId;
         updates['status'] = 'round_end';
         updates[`players/${playerId}/wins`] = (me.wins || 0) + 1;
-      } else {
-        const allPlayers = Object.values(freshRoom.players || {});
-        const everyoneFinishedQuestions = allPlayers.every(p => (p.id === playerId ? nextQIndex : (p.questionIndex || 0)) >= QUESTIONS.length);
-
-        if (everyoneFinishedQuestions) {
-          const simulatedPlayers = Object.entries(freshRoom.players || {}).map(([pid, p]) => {
-            if (pid === playerId) {
-              return [pid, { ...p, progress: newProgress, questionIndex: nextQIndex, finishedAt: p.finishedAt || 0 }];
-            }
-            return [pid, p];
-          });
-
-          simulatedPlayers.sort((a, b) => {
-            const progressDiff = (b[1].progress || 0) - (a[1].progress || 0);
-            if (progressDiff !== 0) return progressDiff;
-            const aTime = a[1].finishedAt || Number.MAX_SAFE_INTEGER;
-            const bTime = b[1].finishedAt || Number.MAX_SAFE_INTEGER;
-            return aTime - bTime;
-          });
-
-          const winnerId = simulatedPlayers[0][0];
-          const winner = freshRoom.players[winnerId];
-          updates['winnerId'] = winnerId;
-          updates['status'] = 'round_end';
-          if (winnerId === playerId) {
-            updates[`players/${winnerId}/wins`] = (me.wins || 0) + 1;
-          } else {
-            updates[`players/${winnerId}/wins`] = (winner?.wins || 0) + 1;
-          }
-        }
       }
 
       await roomsRef.child(roomCode).update(updates);
@@ -1148,7 +1107,7 @@
       els.resultMeWins.textContent = me.wins || 0;
       els.resultOpWins.textContent = opponent.wins || 0;
       els.nextRoundBtn.classList.toggle('hidden', !isHost);
-      els.resultNotice.textContent = isHost ? 'כשתהיה מוכן, אפשר להתחיל סבב נוסף.' : 'ממתינים למארח להתחיל סבב חדש…';
+      els.resultNotice.textContent = isHost ? 'כשתהיה מוכן, אפשר להתחיל מירוץ נוסף.' : 'ממתינים למארח להתחיל מירוץ חדש…';
     }
 
     async function startNextRound() {
